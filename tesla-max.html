@@ -1,0 +1,807 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="theme-color" content="#000000" />
+  <title>₿₿₿ Bitcoin Dashboard and Links for Tesla ₿₿₿</title>
+  <link rel="icon" href="data:image/svg+xml,%3Csvg%20xmlns='http://www.w3.org/2000/svg'%20viewBox='0%200%2032%2032'%3E%3Crect%20width='32'%20height='32'%20rx='8'%20fill='%23000'/%3E%3Ctext%20x='16'%20y='23'%20font-size='20'%20text-anchor='middle'%20fill='%23f4f4f4'%20font-family='sans-serif'%20font-weight='600'%3E%E2%82%BF%3C/text%3E%3C/svg%3E" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
+  <style>
+    :root {
+      --bg:        #000000;
+      --card:      #16181c;
+      --card-2:    #22252b;
+      --card-3:    #2c2f36;
+      --text:      #f4f4f4;
+      --text-2:    #a2a3a5;
+      --text-3:    #5c5e62;
+      --divider:   #2b2d33;
+      --accent:    #3e6ae1;
+      --green:     #2fbf71;
+      --yellow:    #f5a623;
+      --red:       #e82127;
+      --shadow:    0 1px 2px rgba(0,0,0,.5);
+      --seg-bg:    #22252b;
+      --seg-active:#3c4047;
+      --screen:    #0a0a0c;
+      --screen-ink:#e8e8ea;
+    }
+
+    [data-theme="light"] {
+      --bg:        #f4f4f4;
+      --card:      #ffffff;
+      --card-2:    #f2f2f3;
+      --card-3:    #e8e9eb;
+      --text:      #171a20;
+      --text-2:    #5c5e62;
+      --text-3:    #a2a3a5;
+      --divider:   #e2e3e5;
+      --accent:    #3e6ae1;
+      --green:     #1f9e5c;
+      --yellow:    #c97f08;
+      --red:       #d0212a;
+      --shadow:    0 2px 8px rgba(23,26,32,.08);
+      --seg-bg:    #e8e9eb;
+      --seg-active:#ffffff;
+      --screen:    #111214;
+      --screen-ink:#e8e8ea;
+    }
+
+    * { box-sizing: border-box; }
+    html { scroll-behavior: smooth; }
+
+    body {
+      margin: 0;
+      background: var(--bg);
+      color: var(--text);
+      font-family: "Inter", -apple-system, "Segoe UI", Helvetica, Arial, sans-serif;
+      font-size: 15px;
+      line-height: 1.5;
+      min-height: 100vh;
+      overflow-x: hidden;
+      transition: background-color .25s ease, color .25s ease;
+      font-feature-settings: "tnum" 1;
+    }
+
+    .wrap { position: relative; max-width: 1240px; margin: 0 auto; padding: 0 24px 80px; }
+
+    /* ===== Header ===== */
+    header {
+      position: sticky; top: 0; z-index: 6;
+      display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between;
+      gap: 16px; padding: 22px 0 16px;
+      margin-bottom: 18px;
+      background: var(--bg);
+      transition: background-color .25s ease;
+      border-bottom: 1px solid var(--divider);
+    }
+    .brand { display: flex; align-items: center; gap: 13px; }
+    .brand .sym {
+      font-size: 32px; font-weight: 600; line-height: 1;
+    }
+    .brand h1 {
+      margin: 0; font-weight: 600; font-size: clamp(19px, 3.4vw, 24px);
+      letter-spacing: -.01em;
+    }
+    .head-right { display: flex; align-items: center; gap: 14px; flex-wrap: wrap; }
+
+    .tagline {
+      display: inline-flex; align-items: center; gap: 8px;
+      font-size: 13px; font-weight: 500;
+      color: var(--text-2);
+      background: var(--card-2);
+      padding: 7px 14px; border-radius: 100px;
+      white-space: nowrap;
+      transition: background-color .25s ease;
+    }
+    .tagline .dot {
+      width: 8px; height: 8px; border-radius: 50%;
+      background: var(--text-3);
+    }
+    .tagline.live .dot { background: var(--green); animation: pulse 1.8s infinite; }
+    .tagline.err  .dot { background: var(--red); }
+    @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:.4} }
+
+    /* Dark / Light segmented control */
+    .theme-seg {
+      display: inline-flex; gap: 2px;
+      background: var(--seg-bg); border-radius: 100px; padding: 3px;
+      transition: background-color .25s ease;
+    }
+    .theme-seg button {
+      appearance: none; border: none; cursor: pointer;
+      background: transparent; color: var(--text-2);
+      font-family: inherit; font-size: 13px; font-weight: 500;
+      padding: 6px 16px; border-radius: 100px;
+      transition: background-color .2s ease, color .2s ease, box-shadow .2s ease;
+    }
+    .theme-seg button.active {
+      background: var(--seg-active); color: var(--text);
+      box-shadow: var(--shadow);
+    }
+
+    /* ===== Section labels ===== */
+    .section-label {
+      font-size: 14px; font-weight: 600;
+      color: var(--text-2); margin-bottom: 12px;
+    }
+
+    /* ===== BLOCKCLOCK display ===== */
+    .bc-section { margin: 6px 0 28px; }
+
+    .device {
+      width: 100%;
+      background: var(--card);
+      border-radius: 16px;
+      padding: clamp(12px, 1.6vw, 24px);
+      box-shadow: var(--shadow);
+      transition: background-color .25s ease;
+    }
+    .screens {
+      display: grid; grid-template-columns: repeat(7, 1fr);
+      gap: clamp(6px, .9vw, 12px);
+      aspect-ratio: 7.6/1.15;
+    }
+    .bc-panel {
+      position: relative; overflow: hidden;
+      border-radius: clamp(8px, .9vw, 12px);
+      background: var(--screen);
+      display: grid; place-items: center;
+      transition: background-color .25s ease;
+    }
+    .bc-char {
+      color: var(--screen-ink);
+      font-size: clamp(36px, 7.5vw, 110px);
+      font-weight: 600; line-height: 1; letter-spacing: -.04em;
+      text-align: center;
+      font-feature-settings: "tnum" 1;
+    }
+    .bc-char.small { font-size: clamp(30px, 6vw, 92px); }
+    .bc-char.tiny  { font-size: clamp(24px, 5vw, 74px); }
+    .bc-char.flip { animation: einkfade .4s ease; }
+    @keyframes einkfade {
+      0%   { opacity: 0; transform: translateY(6%); }
+      100% { opacity: 1; transform: translateY(0); }
+    }
+
+    /* ===== Dashboard ===== */
+    .dash {
+      display: grid; gap: 14px;
+      grid-template-columns: 1.3fr 1fr 1fr;
+      margin: 6px 0 14px;
+    }
+    .card {
+      background: var(--card);
+      border-radius: 14px; padding: 20px 22px;
+      box-shadow: var(--shadow);
+      transition: background-color .25s ease;
+    }
+    .card .label {
+      font-size: 13px; font-weight: 500; color: var(--text-2);
+    }
+    .card .big {
+      font-size: clamp(28px, 4.5vw, 40px); font-weight: 600;
+      line-height: 1.15; margin-top: 6px; letter-spacing: -.02em;
+      color: var(--text);
+    }
+    .card .sub { font-size: 13px; color: var(--text-2); margin-top: 4px; }
+    .card .big .unit { font-size: .45em; color: var(--text-2); font-weight: 500; }
+
+    .fees-section { margin: 6px 0 14px; }
+    .fees .label { margin-bottom: 14px; }
+    .fee-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; }
+    .fee {
+      background: var(--card-2); border-radius: 12px;
+      padding: 18px 12px; text-align: center;
+      transition: background-color .2s ease;
+    }
+    .fee:hover { background: var(--card-3); }
+    .fee .val {
+      font-size: clamp(34px, 5.5vw, 64px); font-weight: 600;
+      line-height: 1.1; letter-spacing: -.02em;
+      font-feature-settings: "tnum" 1;
+      white-space: nowrap;
+    }
+    .fee .val .pfx { font-weight: 600; color: inherit; }
+    .fee .vbyte { font-size: clamp(14px, 1.6vw, 18px); font-weight: 500; color: var(--text-2); margin-top: 6px; }
+
+    .meta { text-align: right; font-size: 12px; color: var(--text-3); margin: 6px 4px 12px; }
+    .meta a { color: var(--text-2); text-decoration: none; }
+    .meta a:hover { text-decoration: underline; }
+    .meta #updated { color: var(--text-2); }
+
+    /* ===== Next Block fee distribution ===== */
+    .nb-section { margin: 6px 0 28px; }
+    .nb-stats {
+      display: flex; flex-wrap: wrap; gap: 6px 28px;
+      font-size: 13px; color: var(--text-2);
+      margin: 12px 2px 4px;
+    }
+    .nb-stats b { color: var(--text); font-weight: 600; }
+    .feechart { width: 100%; margin-top: 6px; }
+    .feechart svg { display: block; width: 100%; height: auto; }
+    .feechart .grid { stroke: var(--divider); stroke-dasharray: 2 4; }
+    .feechart .fee-line { stroke: var(--accent); fill: none; stroke-width: 1.8; }
+    .feechart .fee-dot { fill: var(--accent); stroke: var(--card); stroke-width: 1.5; }
+    .feechart .stop-a { stop-color: var(--accent); stop-opacity: .30; }
+    .feechart .stop-b { stop-color: var(--accent); stop-opacity: .02; }
+    .feechart .axis-label { fill: var(--text-3); font-family: "Inter", sans-serif; font-size: 11px; font-feature-settings: "tnum" 1; }
+    .feechart .pt-label { fill: var(--text); font-family: "Inter", sans-serif; font-size: 11px; font-weight: 600; font-feature-settings: "tnum" 1; }
+    .feechart .axis-name { fill: var(--text-2); font-family: "Inter", sans-serif; font-size: 11px; font-weight: 500; }
+
+    /* ===== Links ===== */
+    .links-section { margin: 14px 0 28px; }
+
+    .links-toolbar {
+      display: flex; align-items: center; gap: 14px; margin-bottom: 16px;
+    }
+    .link-search-box { position: relative; flex: 1; max-width: 420px; }
+    .link-search-box .icon {
+      position: absolute; left: 14px; top: 50%; transform: translateY(-50%);
+      color: var(--text-3); font-size: 15px; pointer-events: none;
+    }
+    .link-search {
+      width: 100%; background: var(--card-2); color: var(--text);
+      border: none; border-radius: 100px;
+      padding: 11px 16px 11px 38px; font-family: inherit; font-size: 14px;
+      transition: background-color .2s ease, box-shadow .2s ease;
+    }
+    .link-search::placeholder { color: var(--text-3); }
+    .link-search:focus { outline: none; box-shadow: 0 0 0 2px var(--accent); }
+    .link-count {
+      font-size: 13px; font-weight: 500; color: var(--text-2); white-space: nowrap;
+    }
+
+    .links-grid {
+      display: grid; grid-template-columns: repeat(3, 1fr); gap: 14px;
+    }
+    .link-col {
+      background: var(--card); border-radius: 14px; padding: 18px 16px;
+      box-shadow: var(--shadow);
+      transition: background-color .25s ease;
+    }
+    .link-col.col-empty { display: none; }
+
+    .col-head {
+      font-size: 13px; font-weight: 600; color: var(--text-2);
+      padding: 0 10px 10px; margin-bottom: 6px;
+      border-bottom: 1px solid var(--divider);
+    }
+
+    .links-grid a {
+      display: flex; align-items: center; justify-content: space-between;
+      text-decoration: none; color: var(--text); padding: 10px 12px;
+      border-radius: 10px; font-size: 14px; font-weight: 500;
+      transition: background-color .15s ease;
+    }
+    .links-grid a.hidden { display: none; }
+    .links-grid a::after { content: "›"; color: var(--text-3); font-size: 16px; transition: transform .15s ease, color .15s ease; }
+    .links-grid a:hover { background: var(--card-2); }
+    .links-grid a:hover::after { color: var(--accent); transform: translateX(3px); }
+
+    .links-empty {
+      display: none; padding: 26px 0; text-align: center; color: var(--text-2); font-size: 14px;
+    }
+    .links-empty.show { display: block; }
+    .links-empty b { color: var(--text); font-weight: 600; }
+
+    /* ===== Footer ===== */
+    footer { margin-top: 42px; text-align: center; color: var(--text-2); font-size: 13px; }
+    footer .rule { height: 1px; background: var(--divider); margin-bottom: 22px; }
+    footer .ticker { margin-top: 14px; color: var(--text-3); font-size: 11px; letter-spacing: .28em; }
+
+    @media (max-width: 760px) {
+      .dash { grid-template-columns: 1fr 1fr; }
+      .fee-grid { grid-template-columns: 1fr 1fr; }
+      .links-grid { grid-template-columns: 1fr; }
+      .link-search-box { max-width: none; }
+    }
+    @media (max-width: 460px) {
+      .dash { grid-template-columns: 1fr; }
+    }
+
+    .reveal { opacity: 0; transform: translateY(8px); animation: rise .5s ease forwards; }
+    @keyframes rise { to { opacity: 1; transform: none; } }
+  </style>
+</head>
+<body>
+<div class="wrap">
+
+  <!-- ===== HEADER ===== -->
+  <header>
+    <div class="brand">
+      <span class="sym">₿</span>
+      <h1>Tesla Bitcoin Dashboard</h1>
+    </div>
+    <div class="head-right">
+      <div class="tagline reveal" id="status">
+        <span class="dot"></span>Connecting…
+      </div>
+      <div class="theme-seg" role="group" aria-label="Color theme">
+        <button id="theme-dark" class="active" type="button">Dark</button>
+        <button id="theme-light" type="button">Light</button>
+      </div>
+    </div>
+  </header>
+
+  <!-- ===== BLOCKCLOCK DISPLAY ===== -->
+  <div class="bc-section reveal" style="animation-delay:.08s">
+    <div class="section-label">Tick Tock Next Block</div>
+    <section class="device" aria-label="Block clock display">
+      <div class="screens">
+        <div class="bc-panel"><div class="bc-char" id="c0"> </div></div>
+        <div class="bc-panel"><div class="bc-char" id="c1"> </div></div>
+        <div class="bc-panel"><div class="bc-char" id="c2"> </div></div>
+        <div class="bc-panel"><div class="bc-char" id="c3"> </div></div>
+        <div class="bc-panel"><div class="bc-char" id="c4"> </div></div>
+        <div class="bc-panel"><div class="bc-char" id="c5"> </div></div>
+        <div class="bc-panel"><div class="bc-char" id="c6"> </div></div>
+      </div>
+    </section>
+  </div>
+
+  <!-- ===== NEXT BLOCK FEE DISTRIBUTION ===== -->
+  <div class="nb-section reveal" style="animation-delay:.12s">
+    <div class="section-label">Next Block Fee Curve</div>
+    <div class="card">
+      <div class="label">Fee Distribution · sat/vB</div>
+      <div class="nb-stats" id="nb-stats">
+        <span>Median fee <b id="nb-median">—</b></span>
+        <span>Fee span <b id="nb-span">—</b></span>
+        <span>Total fees <b id="nb-fees">—</b></span>
+        <span>Transactions <b id="nb-txs">—</b></span>
+      </div>
+      <div class="feechart" id="feechart"></div>
+    </div>
+  </div>
+
+  <!-- ===== RECOMMENDED FEES ===== -->
+  <div class="fees-section reveal" style="animation-delay:.14s">
+    <div class="card fees">
+      <div class="label">Priority Fees · sat/vB</div>
+      <div class="fee-grid">
+        <div class="fee hi">
+          <div class="val" id="fee-high">—</div>
+          <div class="vbyte">~10 min</div>
+        </div>
+        <div class="fee med">
+          <div class="val" id="fee-med">—</div>
+          <div class="vbyte">~30 min</div>
+        </div>
+        <div class="fee low">
+          <div class="val" id="fee-low">—</div>
+          <div class="vbyte">~1 hr</div>
+        </div>
+        <div class="fee none">
+          <div class="val" id="fee-none">—</div>
+          <div class="vbyte">whenever bro</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ===== DASHBOARD ===== -->
+  <section class="dash reveal" style="animation-delay:.16s">
+    <div class="card">
+      <div class="label">BTC / USD</div>
+      <div class="big" id="price">$<span class="unit">—</span></div>
+      <div class="sub" id="price-sub">spot price</div>
+    </div>
+    <div class="card">
+      <div class="label">Sats per Dollar</div>
+      <div class="big" id="satsdollar">—</div>
+      <div class="sub">sats / $1</div>
+    </div>
+    <div class="card">
+      <div class="label">Block Height</div>
+      <div class="big" id="height">—</div>
+      <div class="sub">tip of chain</div>
+    </div>
+  </section>
+
+  <div class="meta">
+    data from <a href="https://mempool.space/" target="_blank" rel="noopener">mempool.space</a>
+    &nbsp;·&nbsp; updated <span id="updated">—</span> &nbsp;·&nbsp; auto-refresh 10s
+  </div>
+
+  <!-- ===== LINKS ===== -->
+  <div class="links-section reveal" style="animation-delay:.24s">
+    <div class="section-label">Bitcoin Links</div>
+    <div class="links-toolbar">
+      <div class="link-search-box">
+        <span class="icon">⌕</span>
+        <input class="link-search" id="link-search" type="search" autocomplete="off" placeholder="Search links…" aria-label="Search links" />
+      </div>
+      <span class="link-count" id="link-count"></span>
+    </div>
+    <div class="links-grid" id="links-grid">
+      <div class="link-col">
+        <div class="col-head">Stack Sats</div>
+        <a target="_blank" href="https://sparrowwallet.com/download/">Sparrow Download</a>
+        <a target="_blank" href="https://bitbo.io/">BiTBO</a>
+        <a target="_blank" href="https://blockwatch.live/">BLOCKWATCH Live</a>
+        <a target="_blank" href="https://bitcoin.clarkmoody.com/dashboard/">ClarkMoodyBitcoin</a>
+        <a target="_blank" href="https://timechainstats.com/">TimechainStats</a>
+        <a target="_blank" href="https://txcity.io/v/btc">txcity BTC</a>
+        <a target="_blank" href="https://bitcoin.holiday/">Bitcoin Holiday Calendar</a>
+        <a target="_blank" href="https://bitcoinerjobs.com/">Bitcoiner Jobs</a>
+        <a target="_blank" href="https://utxo.live/">UTXO.live</a>
+        <a target="_blank" href="https://www.nobsbitcoin.com/">No BS Bitcoin</a>
+        <a target="_blank" href="https://mempool.observer/">mempool.observer</a>
+        <a target="_blank" href="https://mempool.space/">mempool.space</a>
+        <a target="_blank" href="https://mempool.observer/monitor/">Bitcoin Transaction Monitor</a>
+        <a target="_blank" href="https://timechainexplorer.com/mempool">Timechain Explorer Mempool</a>
+        <a target="_blank" href="https://timechainexplorer.com/">Timechain Explorer</a>
+      </div>
+      <div class="link-col">
+        <div class="col-head">Don't Trust</div>
+        <a target="_blank" href="https://coldcard.com/downloads/all">COLDCARD Firmware</a>
+        <a target="_blank" href="https://bitcointicker.co/">BitcoinTicker.co</a>
+        <a target="_blank" href="https://timechaincalendar.com/">TimeChainCalendar</a>
+        <a target="_blank" href="https://www.hoseki.app/proof-of-reserves#etfs">proof of reserves #etf</a>
+        <a target="_blank" href="https://stacker.news/">stacker.news</a>
+        <a target="_blank" href="https://kibo.money/chart-bitcoin-price">kibo.money</a>
+        <a target="_blank" href="https://bitbo.io/tools/mining-calculator/">Bitcoin Mining Profit Calculator</a>
+        <a target="_blank" href="https://bitbo.io/tools/satoshi-usd/">Sats2USD BTC2USD Calc</a>
+        <a target="_blank" href="https://blockstream.info/">Blockstream Explorer</a>
+        <a target="_blank" href="https://nakamotoinstitute.org/">Nakamoto Institute</a>
+        <a target="_blank" href="https://delvingbitcoin.org/">Delving Bitcoin</a>
+        <a target="_blank" href="https://bitcoinops.org/">Bitcoin Optech</a>
+        <a target="_blank" href="https://blog.blockstream.com/codex32-a-shamir-secret-sharing-scheme/">Codex32</a>
+        <a target="_blank" href="https://blockstream.com/satellite/">Blockstream Satellite</a>
+        <a target="_blank" href="https://payjoin.org/docs/how-it-works/payjoin-v2-bip-77/">How Payjoins Work</a>
+      </div>
+      <div class="link-col">
+        <div class="col-head">Verify</div>
+        <a target="_blank" href="https://github.com/Coldcard/firmware/blob/master/releases/signatures.txt">CC Firmware Signatures</a>
+        <a target="_blank" href="https://blockclockmini.com/">BLOCKCLOCKmini</a>
+        <a target="_blank" href="https://mempool.space/">mempool.space</a>
+        <a target="_blank" href="https://bitcoincore.org/">BitcoinCore</a>
+        <a target="_blank" href="https://parasite.space/">parasite pool</a>
+        <a target="_blank" href="https://monospace.live/">monospace.live</a>
+        <a target="_blank" href="https://bitfeed.live/">bitfeed.live</a>
+        <a target="_blank" href="https://www.frostr.org/">FROSTR</a>
+        <a target="_blank" href="https://satsie.dev/zines/payjoin">Payjoin Zine</a>
+        <a target="_blank" href="https://satsie.dev/zines/">Bitcoin Zines</a>
+        <a target="_blank" href="https://hashpool.dev/articles/what-is-hashpool/">Hashpool</a>
+        <a target="_blank" href="https://utxos.org/">utxos.org</a>
+        <a target="_blank" href="https://stratum.work/">stratum.work</a>
+      </div>
+    </div>
+    <div class="links-empty" id="links-empty">No links match “<b id="links-q"></b>”</div>
+  </div>
+
+  <!-- ===== FOOTER ===== -->
+  <footer>
+    <div class="rule"></div>
+    <p>Bitcoin Links &nbsp;·&nbsp; For p2p Use Only</p>
+    <p class="ticker">₿ Only ₿ Only ₿ Only ₿ Only ₿ Only ₿ Only ₿ Only ₿ Only ₿ Only ₿ Only</p>
+  </footer>
+
+</div>
+
+<script>
+  const API = "https://mempool.space/api";
+  const $id = id => document.getElementById(id);
+  const nf = new Intl.NumberFormat("en-US");
+
+  // ---- Theme (dark default, persisted) ----
+  function setTheme(mode) {
+    document.documentElement.dataset.theme = mode;
+    localStorage.setItem("theme", mode);
+    $id("theme-dark").classList.toggle("active", mode === "dark");
+    $id("theme-light").classList.toggle("active", mode === "light");
+    document.querySelector('meta[name="theme-color"]').content = mode === "light" ? "#f4f4f4" : "#000000";
+  }
+  $id("theme-dark").addEventListener("click", () => setTheme("dark"));
+  $id("theme-light").addEventListener("click", () => setTheme("light"));
+  setTheme(localStorage.getItem("theme") === "light" ? "light" : "dark");
+
+  function setStatus(state, text) {
+    const el = $id("status");
+    el.className = "tagline reveal " + state;
+    el.innerHTML = '<span class="dot"></span>' + text;
+  }
+
+  async function getJSON(path) {
+    const r = await fetch(API + path, { cache: "no-store" });
+    if (!r.ok) throw new Error(path + " -> " + r.status);
+    const ct = r.headers.get("content-type") || "";
+    return ct.includes("json") ? r.json() : r.text();
+  }
+
+  // ---- BLOCKCLOCK ----
+  const cells = [...document.querySelectorAll(".bc-char")];
+  let bcData = { height: "-------", price: "-------", sats: "-------" };
+  const views = ["height", "price", "sats"];
+  let viewIndex = 0;
+
+  function seven(text) {
+    text = String(text).toUpperCase();
+    if (text.length > 7) text = text.slice(-7);
+    return text.padStart(7, " ");
+  }
+
+  function bcShow(text) {
+    seven(text).split("").forEach((ch, i) => {
+      const val = ch === " " ? "" : ch;
+      const el = cells[i];
+      el.classList.toggle("tiny",  /[A-Z₿$]/.test(val));
+      el.classList.toggle("small", val === "$" || val === "S");
+      if (el.textContent !== val) {
+        el.textContent = val;
+        el.classList.remove("flip");
+        void el.offsetWidth;
+        el.classList.add("flip");
+      }
+    });
+  }
+
+  function rotate() {
+    bcShow(bcData[views[viewIndex]]);
+    viewIndex = (viewIndex + 1) % views.length;
+  }
+
+  // ---- Next block fee distribution chart ----
+  // Mirrors mempool.space/mempool-block/0: feeRange percentiles (low -> high)
+  // across % block weight, on a log fee-rate axis. All colors come from CSS
+  // classes so the light/dark theme switch restyles the chart instantly.
+  let nextBlock = null;
+
+  function fmtRate(v) {
+    if (v >= 100) return String(Math.round(v));
+    if (v >= 10)  return v.toFixed(1);
+    return v.toFixed(2);
+  }
+
+  function smoothPath(pts) {
+    let d = `M${pts[0][0]},${pts[0][1]}`;
+    for (let i = 0; i < pts.length - 1; i++) {
+      const p0 = pts[Math.max(0, i - 1)], p1 = pts[i],
+            p2 = pts[i + 1], p3 = pts[Math.min(pts.length - 1, i + 2)];
+      const c1x = p1[0] + (p2[0] - p0[0]) / 6, c1y = p1[1] + (p2[1] - p0[1]) / 6;
+      const c2x = p2[0] - (p3[0] - p1[0]) / 6, c2y = p2[1] - (p3[1] - p1[1]) / 6;
+      d += `C${c1x},${c1y},${c2x},${c2y},${p2[0]},${p2[1]}`;
+    }
+    return d;
+  }
+
+  function renderFeeChart() {
+    const host = $id("feechart");
+    if (!nextBlock || !nextBlock.feeRange || !nextBlock.feeRange.length) return;
+
+    const fr  = nextBlock.feeRange;
+    const W   = Math.max(320, host.clientWidth || 600);
+    const H   = 250;
+    const pad = { top: 28, right: 26, bottom: 36, left: 48 };
+    const iw  = W - pad.left - pad.right;
+    const ih  = H - pad.top - pad.bottom;
+
+    const maxV = Math.max(...fr);
+    const minV = Math.min(...fr);
+    const yMin = minV >= 1 ? 1 : 0.1;
+    const yMax = Math.max(maxV, yMin * 10);
+    const logMin = Math.log10(yMin), logMax = Math.log10(yMax);
+
+    const x = i => pad.left + (i / (fr.length - 1)) * iw;
+    const y = v => pad.top + ih - ((Math.log10(Math.max(v, yMin)) - logMin) / (logMax - logMin)) * ih;
+
+    const pts = fr.map((v, i) => [x(i), y(v)]);
+    const baseline = pad.top + ih;
+
+    // gridlines: powers of ten, plus 2x/5x when the range is narrow
+    let ticks = [];
+    for (let p = Math.ceil(logMin); ; p++) {
+      const base = Math.pow(10, p);
+      if (base > yMax * 1.001) break;
+      ticks.push(base);
+    }
+    if (ticks.length <= 2) {
+      ticks = [];
+      for (let p = Math.floor(logMin); Math.pow(10, p) <= yMax; p++) {
+        for (const m of [1, 2, 5]) {
+          const t = m * Math.pow(10, p);
+          if (t >= yMin && t <= yMax * 1.001) ticks.push(t);
+        }
+      }
+    }
+
+    let svg = `<svg viewBox="0 0 ${W} ${H}" width="${W}" height="${H}" role="img" aria-label="Next block fee distribution">`;
+    svg += `<defs><linearGradient id="feefill" x1="0" y1="0" x2="0" y2="1">
+      <stop class="stop-a" offset="0%"/>
+      <stop class="stop-b" offset="100%"/>
+    </linearGradient></defs>`;
+
+    for (const t of ticks) {
+      const ty = y(t);
+      svg += `<line class="grid" x1="${pad.left}" x2="${W - pad.right}" y1="${ty}" y2="${ty}"/>`;
+      svg += `<text class="axis-label" x="${pad.left - 8}" y="${ty + 3.5}" text-anchor="end">${fmtRate(t)}</text>`;
+    }
+
+    for (let p = 0; p <= 100; p += 20) {
+      const tx = pad.left + (p / 100) * iw;
+      svg += `<text class="axis-label" x="${tx}" y="${baseline + 16}" text-anchor="middle">${p}</text>`;
+    }
+    svg += `<text class="axis-name" x="${pad.left + iw / 2}" y="${H - 4}" text-anchor="middle">% weight</text>`;
+
+    const line = smoothPath(pts);
+    svg += `<path d="${line} L${pts[pts.length - 1][0]},${baseline} L${pts[0][0]},${baseline} Z" fill="url(#feefill)"/>`;
+    svg += `<path class="fee-line" d="${line}"/>`;
+
+    pts.forEach(([px, py], i) => {
+      const anchor = i === 0 ? "start" : (i === pts.length - 1 ? "end" : "middle");
+      svg += `<circle class="fee-dot" cx="${px}" cy="${py}" r="3"/>`;
+      svg += `<text class="pt-label" x="${px}" y="${py - 9}" text-anchor="${anchor}">${fmtRate(fr[i])}</text>`;
+    });
+
+    svg += `</svg>`;
+    host.innerHTML = svg;
+  }
+
+  function updateNextBlock(mb) {
+    nextBlock = mb;
+    $id("nb-median").textContent = "~" + fmtRate(mb.medianFee) + " sat/vB";
+    $id("nb-span").textContent   = fmtRate(Math.min(...mb.feeRange)) + " – " + fmtRate(Math.max(...mb.feeRange)) + " sat/vB";
+    $id("nb-fees").textContent   = (mb.totalFees / 1e8).toFixed(3) + " BTC";
+    $id("nb-txs").textContent    = nf.format(mb.nTx);
+    renderFeeChart();
+  }
+
+  let chartResizeTimer = null;
+  window.addEventListener("resize", () => {
+    clearTimeout(chartResizeTimer);
+    chartResizeTimer = setTimeout(renderFeeChart, 150);
+  });
+
+  // ---- Link search / filter ----
+  function setupLinkSearch() {
+    const input   = $id("link-search");
+    const grid    = $id("links-grid");
+    const cols    = [...grid.querySelectorAll(".link-col")];
+    const total   = grid.querySelectorAll("a").length;
+    const countEl = $id("link-count");
+    const emptyEl = $id("links-empty");
+
+    const apply = () => {
+      const q = input.value.trim().toLowerCase();
+      let visible = 0;
+      cols.forEach(col => {
+        let colVisible = 0;
+        col.querySelectorAll("a").forEach(a => {
+          const hit = !q || a.textContent.toLowerCase().includes(q) || a.href.toLowerCase().includes(q);
+          a.classList.toggle("hidden", !hit);
+          if (hit) colVisible++;
+        });
+        col.classList.toggle("col-empty", colVisible === 0);
+        visible += colVisible;
+      });
+      countEl.textContent = q ? `${visible} / ${total}` : `${total} links`;
+      emptyEl.classList.toggle("show", visible === 0);
+      $id("links-q").textContent = input.value.trim();
+    };
+
+    input.addEventListener("input", apply);
+    apply();
+  }
+
+  // ---- Relative "updated" timestamp ----
+  let lastUpdated = null;
+
+  function fmtRel(d) {
+    if (!d) return "—";
+    const s = Math.max(0, Math.round((Date.now() - d) / 1000));
+    if (s < 5)  return "just now";
+    if (s < 60) return s + "s ago";
+    const m = Math.floor(s / 60);
+    if (m < 60) return m + "m ago";
+    const h = Math.floor(m / 60);
+    return h + "h ago";
+  }
+
+  function tickUpdated() {
+    $id("updated").textContent = fmtRel(lastUpdated);
+  }
+
+  // ---- Refresh: each endpoint fails independently ----
+  // returns true if any live data was obtained, false if fully offline
+  async function refresh() {
+    const [height, fees, prices, mempoolBlocks] = await Promise.all([
+      getJSON("/blocks/tip/height").catch(() => null),
+      getJSON("/v1/fees/recommended").catch(() => null),
+      getJSON("/v1/prices").catch(() => null),
+      getJSON("/v1/fees/mempool-blocks").catch(() => null),
+    ]);
+
+    if (height != null) {
+      const blockHeight = Number(height);
+      $id("height").textContent = nf.format(blockHeight);
+      bcData.height = "▦" + blockHeight;
+    }
+
+    if (prices && prices.USD) {
+      const usd = Number(prices.USD);
+      const sats = Math.round(100000000 / usd);
+      $id("price").innerHTML = "$" + nf.format(usd);
+      $id("price-sub").textContent = "spot price · USD";
+      $id("satsdollar").textContent = nf.format(sats);
+      bcData.price = "$" + Math.round(usd);
+      bcData.sats  = sats + "₿/$";
+    }
+
+    if (fees) {
+      const fee = (pfx, v) => '<span class="pfx">' + pfx + ': </span>' + Number(v).toFixed(1);
+      $id("fee-high").innerHTML = fee("H",  fees.fastestFee);
+      $id("fee-med").innerHTML  = fee("M",  fees.halfHourFee);
+      $id("fee-low").innerHTML  = fee("L",  fees.hourFee);
+      $id("fee-none").innerHTML = fee("NP", fees.economyFee);
+    }
+
+    if (mempoolBlocks && mempoolBlocks.length) {
+      updateNextBlock(mempoolBlocks[0]);
+    }
+
+    const got = [height, fees, prices, mempoolBlocks].filter(x => x != null).length;
+    if (got === 4) {
+      lastUpdated = Date.now();
+      $id("updated").title = new Date(lastUpdated).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit", second: "2-digit" });
+      tickUpdated();
+      setStatus("live", "Live");
+      return true;
+    } else if (got > 0) {
+      lastUpdated = Date.now();
+      $id("updated").title = new Date(lastUpdated).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit", second: "2-digit" });
+      tickUpdated();
+      setStatus("live", "Live (partial)");
+      return true;
+    } else {
+      bcData.height = "OFFLINE";
+      bcData.price  = "-------";
+      bcData.sats   = "-------";
+      return false;
+    }
+  }
+
+  // ---- Refresh loop: exponential backoff, paused while tab hidden ----
+  const REFRESH_MIN = 10000, REFRESH_MAX = 300000;   // 10s … 5m
+  let refreshDelay = REFRESH_MIN;
+  let refreshTimer = null;
+
+  async function refreshAndReschedule() {
+    const ok = await refresh();
+    if (ok) {
+      refreshDelay = REFRESH_MIN;
+    } else {
+      refreshDelay = Math.min(refreshDelay * 2, REFRESH_MAX);
+      setStatus("err", `Offline — retry in ${Math.round(refreshDelay / 1000)}s`);
+    }
+    scheduleRefresh();
+  }
+
+  function scheduleRefresh() {
+    clearTimeout(refreshTimer);
+    if (document.hidden) return;             // resumed by visibilitychange
+    refreshTimer = setTimeout(refreshAndReschedule, refreshDelay);
+  }
+
+  document.addEventListener("visibilitychange", () => {
+    if (document.hidden) {
+      clearTimeout(refreshTimer);
+    } else {
+      refreshAndReschedule();                // catch up immediately on return
+    }
+  });
+
+  // ---- Boot ----
+  setupLinkSearch();
+  setInterval(tickUpdated, 1000);
+
+  refreshAndReschedule().then(() => {
+    rotate();
+    setInterval(rotate, 7000);
+  });
+</script>
+</body>
+</html>
