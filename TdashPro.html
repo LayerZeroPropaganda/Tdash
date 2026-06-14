@@ -1,0 +1,1131 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="theme-color" content="#000000" />
+  <title>₿₿₿ Bitcoin Dashboard for Tesla ₿₿₿</title>
+  <link rel="icon" href="data:image/svg+xml,%3Csvg%20xmlns='http://www.w3.org/2000/svg'%20viewBox='0%200%2032%2032'%3E%3Crect%20width='32'%20height='32'%20rx='8'%20fill='%23000'/%3E%3Ctext%20x='16'%20y='23'%20font-size='20'%20text-anchor='middle'%20fill='%23f4f4f4'%20font-family='sans-serif'%20font-weight='600'%3E%E2%82%BF%3C/text%3E%3C/svg%3E" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
+  <style>
+    :root {
+      --bg:        #000000;
+      --card:      #16181c;
+      --card-2:    #22252b;
+      --card-3:    #2c2f36;
+      --text:      #f4f4f4;
+      --text-2:    #a2a3a5;
+      --text-3:    #5c5e62;
+      --divider:   #2b2d33;
+      --accent:    #3e6ae1;
+      --green:     #2fbf71;
+      --yellow:    #f5a623;
+      --red:       #e82127;
+      --chart-red: #ff5159;
+      --shadow:    0 1px 2px rgba(0,0,0,.5);
+      --seg-bg:    #22252b;
+      --seg-active:#3c4047;
+      --screen:    #0a0a0c;
+      --screen-ink:#e8e8ea;
+    }
+
+    [data-theme="light"] {
+      --bg:        #f4f4f4;
+      --card:      #ffffff;
+      --card-2:    #f2f2f3;
+      --card-3:    #e8e9eb;
+      --text:      #171a20;
+      --text-2:    #5c5e62;
+      --text-3:    #a2a3a5;
+      --divider:   #e2e3e5;
+      --accent:    #3e6ae1;
+      --green:     #1f9e5c;
+      --yellow:    #c97f08;
+      --red:       #d0212a;
+      --chart-red: #d92d3b;
+      --shadow:    0 2px 8px rgba(23,26,32,.08);
+      --seg-bg:    #e8e9eb;
+      --seg-active:#ffffff;
+      --screen:    #111214;
+      --screen-ink:#e8e8ea;
+    }
+
+    * { box-sizing: border-box; }
+    html { scroll-behavior: smooth; }
+
+    body {
+      margin: 0;
+      background: var(--bg);
+      color: var(--text);
+      font-family: "Inter", -apple-system, "Segoe UI", Helvetica, Arial, sans-serif;
+      font-size: 15px;
+      line-height: 1.5;
+      min-height: 100vh;
+      overflow-x: hidden;
+      transition: background-color .25s ease, color .25s ease;
+      font-feature-settings: "tnum" 1;
+    }
+
+    .wrap { position: relative; max-width: 1240px; margin: 0 auto; padding: 0 24px 80px; }
+
+    /* ===== Header ===== */
+    header {
+      position: sticky; top: 0; z-index: 6;
+      display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between;
+      gap: 16px; padding: 22px 0 16px;
+      margin-bottom: 18px;
+      background: var(--bg);
+      transition: background-color .25s ease;
+      border-bottom: 1px solid var(--divider);
+    }
+    .brand { display: flex; align-items: center; gap: 13px; }
+    .brand .sym {
+      font-size: 32px; font-weight: 600; line-height: 1;
+    }
+    .brand h1 {
+      margin: 0; font-weight: 600; font-size: clamp(19px, 3.4vw, 24px);
+      letter-spacing: -.01em;
+    }
+    .head-right { display: flex; align-items: center; gap: 14px; flex-wrap: wrap; }
+
+    .tagline {
+      display: inline-flex; align-items: center; gap: 8px;
+      font-size: 13px; font-weight: 500;
+      color: var(--text-2);
+      background: var(--card-2);
+      padding: 7px 14px; border-radius: 100px;
+      white-space: nowrap;
+      transition: background-color .25s ease;
+    }
+    .tagline .dot {
+      width: 8px; height: 8px; border-radius: 50%;
+      background: var(--text-3);
+    }
+    .tagline.live .dot { background: var(--green); animation: pulse 1.8s infinite; }
+    .tagline.err  .dot { background: var(--red); }
+    @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:.4} }
+
+    /* Dark / Light segmented control */
+    .theme-seg {
+      display: inline-flex; gap: 2px;
+      background: var(--seg-bg); border-radius: 100px; padding: 3px;
+      transition: background-color .25s ease;
+    }
+    .theme-seg button {
+      appearance: none; border: none; cursor: pointer;
+      background: transparent; color: var(--text-2);
+      font-family: inherit; font-size: 13px; font-weight: 500;
+      padding: 6px 16px; border-radius: 100px;
+      transition: background-color .2s ease, color .2s ease, box-shadow .2s ease;
+    }
+    .theme-seg button.active {
+      background: var(--seg-active); color: var(--text);
+      box-shadow: var(--shadow);
+    }
+
+    /* ===== Section labels ===== */
+    .section-label {
+      font-size: 14px; font-weight: 600;
+      color: var(--text-2); margin-bottom: 12px;
+    }
+
+    /* ===== BLOCKCLOCK display ===== */
+    .bc-section { margin: 6px 0 28px; }
+
+    .device {
+      width: 100%;
+      background: var(--card);
+      border-radius: 16px;
+      padding: clamp(12px, 1.6vw, 24px);
+      box-shadow: var(--shadow);
+      transition: background-color .25s ease;
+    }
+    .screens {
+      display: grid; grid-template-columns: repeat(7, 1fr);
+      gap: clamp(6px, .9vw, 12px);
+      aspect-ratio: 7.6/1.15;
+    }
+    .bc-panel {
+      position: relative; overflow: hidden;
+      border-radius: clamp(8px, .9vw, 12px);
+      background: var(--screen);
+      display: grid; place-items: center;
+      transition: background-color .25s ease;
+    }
+    .bc-char {
+      color: var(--screen-ink);
+      font-size: clamp(36px, 7.5vw, 110px);
+      font-weight: 600; line-height: 1; letter-spacing: -.04em;
+      text-align: center;
+      font-feature-settings: "tnum" 1;
+    }
+    .bc-char.small { font-size: clamp(30px, 6vw, 92px); }
+    .bc-char.tiny  { font-size: clamp(24px, 5vw, 74px); }
+    .bc-char.flip { animation: einkfade .4s ease; }
+    @keyframes einkfade {
+      0%   { opacity: 0; transform: translateY(6%); }
+      100% { opacity: 1; transform: translateY(0); }
+    }
+
+    /* ===== Dashboard ===== */
+    .dash {
+      display: grid; gap: 14px;
+      grid-template-columns: 1.2fr 1.275fr 1.3fr 0.8fr 1.225fr;
+      margin: 6px 0 14px;
+    }
+    .dash .card { text-align: center; }
+    .card {
+      background: var(--card);
+      border-radius: 14px; padding: 20px 22px;
+      box-shadow: var(--shadow);
+      transition: background-color .25s ease;
+    }
+    .card .label {
+      font-size: 13px; font-weight: 500; color: var(--text-2);
+    }
+    .card .big {
+      font-size: clamp(28px, 4.5vw, 40px); font-weight: 600;
+      line-height: 1.15; margin-top: 6px; letter-spacing: -.02em;
+      color: var(--text);
+    }
+    .card .sub { font-size: 13px; color: var(--text-2); margin-top: 4px; }
+    .card .big .unit { font-size: .45em; color: var(--text-2); font-weight: 500; }
+
+    .fees-section { margin: 6px 0 14px; }
+    .fees .label { margin-bottom: 14px; }
+    .fee-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; }
+    .fee {
+      background: var(--card-2); border-radius: 12px;
+      padding: 18px 12px; text-align: center;
+      transition: background-color .2s ease;
+    }
+    .fee:hover { background: var(--card-3); }
+    .fee .val {
+      font-size: clamp(34px, 5.5vw, 64px); font-weight: 600;
+      line-height: 1.1; letter-spacing: -.02em;
+      font-feature-settings: "tnum" 1;
+      white-space: nowrap;
+    }
+    .fee .val .pfx { font-weight: 600; color: inherit; }
+    .fee .vbyte { font-size: clamp(14px, 1.6vw, 18px); font-weight: 500; color: var(--text-2); margin-top: 6px; }
+
+    .meta { text-align: right; font-size: 12px; color: var(--text-3); margin: 6px 4px 12px; }
+    .meta a { color: var(--text-2); text-decoration: none; }
+    .meta a:hover { text-decoration: underline; }
+    .meta #updated { color: var(--text-2); }
+
+    /* ===== Next Block fee distribution ===== */
+    .nb-section { margin: 6px 0 28px; }
+    .nb-stats {
+      display: flex; flex-wrap: wrap; gap: 6px 28px;
+      font-size: 13px; color: var(--text-2);
+      margin: 12px 2px 4px;
+    }
+    .nb-stats b { color: var(--text); font-weight: 600; }
+    .feechart { width: 100%; margin-top: 6px; }
+    .feechart svg { display: block; width: 100%; height: auto; }
+    .feechart .grid { stroke: var(--divider); stroke-dasharray: 2 4; }
+    .feechart .fee-line { stroke: var(--accent); fill: none; stroke-width: 1.8; }
+    .feechart .fee-dot { fill: var(--accent); stroke: var(--card); stroke-width: 1.5; }
+    .feechart .stop-a { stop-color: var(--accent); stop-opacity: .30; }
+    .feechart .stop-b { stop-color: var(--accent); stop-opacity: .02; }
+    .feechart .axis-label { fill: var(--text-3); font-family: "Inter", sans-serif; font-size: 11px; font-feature-settings: "tnum" 1; }
+    .feechart .pt-label { fill: var(--text); font-family: "Inter", sans-serif; font-size: 11px; font-weight: 600; font-feature-settings: "tnum" 1; }
+    .feechart .axis-name { fill: var(--text-2); font-family: "Inter", sans-serif; font-size: 11px; font-weight: 500; }
+
+    /* Every curve's line, dots, and under-curve gradient inherit the base blue
+       (--accent) from .feechart above, so all charts match the Next Block Fee Curve. */
+
+    /* Lorenz / Gini chart (chart 3) — shaded inequality area shares the fee-curve blue */
+    .feechart.gini .equality     { stroke: var(--text-2); stroke-width: 1.3; stroke-dasharray: 5 4; opacity: .55; fill: none; }
+    .feechart.gini .gini-area    { fill: var(--accent); opacity: .14; }
+    .feechart.gini .gini-big     { fill: var(--text);   font-family: "Inter", sans-serif; font-size: 19px; font-weight: 700; font-feature-settings: "tnum" 1; }
+    .feechart.gini .gini-cap     { fill: var(--text-3); font-family: "Inter", sans-serif; font-size: 10.5px; font-weight: 500; }
+    .feechart.gini .equality-cap { fill: var(--text-2); font-family: "Inter", sans-serif; font-size: 10.5px; font-weight: 500; }
+
+    /* Block-time distribution chart — Poisson (chart 4). Curve + elapsed area use the
+       fee-curve blue; only the "next minute" sliver and the live marker stay red. */
+    .feechart.poisson .elapsed-area { fill: var(--accent);    opacity: .20; }
+    .feechart.poisson .next-area    { fill: var(--chart-red); opacity: .32; }
+    .feechart.poisson .mean-line    { stroke: var(--text-2); stroke-width: 1.3; stroke-dasharray: 5 4; opacity: .55; }
+    .feechart.poisson .mean-cap     { fill: var(--text-2); font-family: "Inter", sans-serif; font-size: 10.5px; font-weight: 500; }
+    .feechart.poisson .now-line     { stroke: var(--chart-red); stroke-width: 1.6; stroke-dasharray: 4 3; }
+    .feechart.poisson .now-dot      { fill: var(--chart-red); stroke: var(--card); stroke-width: 1.5; }
+    .feechart.poisson .now-cap      { fill: var(--chart-red); font-family: "Inter", sans-serif; font-size: 11px; font-weight: 600; font-feature-settings: "tnum" 1; }
+    .feechart.poisson .poisson-big  { fill: var(--text);   font-family: "Inter", sans-serif; font-size: 19px; font-weight: 700; font-feature-settings: "tnum" 1; }
+    .feechart.poisson .poisson-cap  { fill: var(--text-3); font-family: "Inter", sans-serif; font-size: 10.5px; font-weight: 500; }
+
+    /* ===== Footer ===== */
+    footer { margin-top: 42px; text-align: center; color: var(--text-2); font-size: 13px; }
+    footer .rule { height: 1px; background: var(--divider); margin-bottom: 22px; }
+    footer .ticker { margin-top: 14px; color: var(--text-3); font-size: 11px; letter-spacing: .28em; }
+
+    @media (max-width: 1200px) {
+      .dash { grid-template-columns: repeat(3, 1fr); }
+    }
+    @media (max-width: 760px) {
+      .dash { grid-template-columns: 1fr 1fr; }
+      .fee-grid { grid-template-columns: 1fr 1fr; }
+    }
+    @media (max-width: 460px) {
+      .dash { grid-template-columns: 1fr; }
+    }
+
+    .reveal { opacity: 0; transform: translateY(8px); animation: rise .5s ease forwards; }
+    @keyframes rise { to { opacity: 1; transform: none; } }
+  </style>
+</head>
+<body>
+<div class="wrap">
+
+  <!-- ===== HEADER ===== -->
+  <header>
+    <div class="brand">
+      <span class="sym">₿</span>
+      <h1>Tesla Bitcoin Dashboard</h1>
+    </div>
+    <div class="head-right">
+      <div class="tagline reveal" id="status">
+        <span class="dot"></span>Connecting…
+      </div>
+      <div class="theme-seg" role="group" aria-label="Color theme">
+        <button id="theme-dark" class="active" type="button">Dark</button>
+        <button id="theme-light" type="button">Light</button>
+      </div>
+    </div>
+  </header>
+
+  <!-- ===== BLOCKCLOCK DISPLAY ===== -->
+  <div class="bc-section reveal" style="animation-delay:.08s">
+    <div class="section-label">Tick Tock Next Block</div>
+    <section class="device" aria-label="Block clock display">
+      <div class="screens">
+        <div class="bc-panel"><div class="bc-char" id="c0"> </div></div>
+        <div class="bc-panel"><div class="bc-char" id="c1"> </div></div>
+        <div class="bc-panel"><div class="bc-char" id="c2"> </div></div>
+        <div class="bc-panel"><div class="bc-char" id="c3"> </div></div>
+        <div class="bc-panel"><div class="bc-char" id="c4"> </div></div>
+        <div class="bc-panel"><div class="bc-char" id="c5"> </div></div>
+        <div class="bc-panel"><div class="bc-char" id="c6"> </div></div>
+      </div>
+    </section>
+  </div>
+
+  <!-- ===== NEXT BLOCK FEE DISTRIBUTION ===== -->
+  <div class="nb-section reveal" style="animation-delay:.12s">
+    <div class="section-label">Next Block Fee Curve</div>
+    <div class="card">
+      <div class="label">Fee Distribution · sat/vB</div>
+      <div class="nb-stats" id="nb-stats">
+        <span>Median fee <b id="nb-median">—</b></span>
+        <span>Fee span <b id="nb-span">—</b></span>
+        <span>Total fees <b id="nb-fees">—</b></span>
+        <span>Transactions <b id="nb-txs">—</b></span>
+      </div>
+      <div class="feechart" id="feechart"></div>
+    </div>
+  </div>
+
+  <!-- ===== NEXT BLOCK CUMULATIVE FEES ===== -->
+  <div class="nb-section reveal" style="animation-delay:.13s">
+    <div class="section-label">Cumulative Fees Across Block</div>
+    <div class="card">
+      <div class="label">Cumulative Fees · BTC</div>
+      <div class="nb-stats" id="cum-stats">
+        <span>Total fees <b id="cum-total">—</b></span>
+        <span>From top 20% weight <b id="cum-top">—</b></span>
+      </div>
+      <div class="feechart cum" id="cumchart"></div>
+    </div>
+  </div>
+
+  <!-- ===== FEE CONCENTRATION / GINI ===== -->
+  <div class="nb-section reveal" style="animation-delay:.135s">
+    <div class="section-label">Fee Concentration · Gini</div>
+    <div class="card">
+      <div class="label">Lorenz Curve · fee share vs weight share</div>
+      <div class="nb-stats" id="gini-stats">
+        <span>Gini coefficient <b id="gini-val">—</b></span>
+        <span>Top 20% of weight pays <b id="gini-top20">—</b></span>
+        <span>Top 10%: <b id="gini-top10">—</b></span>
+        <span>Top 5%: <b id="gini-top5">—</b></span>
+        <span>Top 1%: <b id="gini-top1">—</b></span>
+      </div>
+      <div class="feechart gini" id="ginichart"></div>
+    </div>
+  </div>
+
+  <!-- ===== BLOCK TIME DISTRIBUTION / POISSON ===== -->
+  <div class="nb-section reveal" style="animation-delay:.138s">
+    <div class="section-label">Block Found Time Distribution Curve</div>
+    <div class="card">
+      <div class="label">Poisson Distribution of Block Found Time</div>
+      <div class="nb-stats" id="poisson-stats">
+        <span>Block found percentile <b id="pz-pct">—</b></span>
+        <span>Your odds in the next minute <b id="pz-odds">9.5%</b></span>
+        <span>% blocks found in next minute <b id="pz-area">—</b></span>
+        <span>Mean wait <b id="pz-mean">~10 min</b></span>
+      </div>
+      <div class="feechart poisson" id="poissonchart"></div>
+    </div>
+  </div>
+
+  <!-- ===== RECOMMENDED FEES ===== -->
+  <div class="fees-section reveal" style="animation-delay:.14s">
+    <div class="card fees">
+      <div class="label">Priority Fees · sat/vB</div>
+      <div class="fee-grid">
+        <div class="fee hi">
+          <div class="val" id="fee-high">—</div>
+          <div class="vbyte">~10 min</div>
+        </div>
+        <div class="fee med">
+          <div class="val" id="fee-med">—</div>
+          <div class="vbyte">~30 min</div>
+        </div>
+        <div class="fee low">
+          <div class="val" id="fee-low">—</div>
+          <div class="vbyte">~1 hr</div>
+        </div>
+        <div class="fee none">
+          <div class="val" id="fee-none">—</div>
+          <div class="vbyte">whenever bro</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ===== DASHBOARD ===== -->
+  <section class="dash reveal" style="animation-delay:.16s">
+    <div class="card">
+      <div class="label">Time Since Last Block</div>
+      <div class="big" id="block-age">—</div>
+      <div class="sub">avg ~10 min</div>
+    </div>
+    <div class="card">
+      <div class="label">Block Found Percentile</div>
+      <div class="big" id="block-pct">—</div>
+      <div class="sub">of waits are shorter</div>
+    </div>
+    <div class="card">
+      <div class="label">BTC / USD</div>
+      <div class="big" id="price">$<span class="unit">—</span></div>
+      <div class="sub" id="price-sub">spot price</div>
+    </div>
+    <div class="card">
+      <div class="label">Sats per Dollar</div>
+      <div class="big" id="satsdollar">—</div>
+      <div class="sub">sats / $1</div>
+    </div>
+    <div class="card">
+      <div class="label">Block Height</div>
+      <div class="big" id="height">—</div>
+      <div class="sub">tip of chain</div>
+    </div>
+  </section>
+
+  <div class="meta">
+    data from <a href="https://mempool.space/" target="_blank" rel="noopener">mempool.space</a>
+    &nbsp;·&nbsp; updated <span id="updated">—</span> &nbsp;·&nbsp; auto-refresh 10s
+  </div>
+
+  <!-- ===== FOOTER ===== -->
+  <footer>
+    <div class="rule"></div>
+    <p>Bitcoin Dashboard &nbsp;·&nbsp; For p2p Use Only</p>
+    <p class="ticker">₿ Only ₿ Only ₿ Only ₿ Only ₿ Only ₿ Only ₿ Only ₿ Only ₿ Only ₿ Only</p>
+  </footer>
+
+</div>
+
+<script>
+  const API = "https://mempool.space/api";
+  const $id = id => document.getElementById(id);
+  const nf = new Intl.NumberFormat("en-US");
+
+  // ---- Theme (dark default, persisted) ----
+  function setTheme(mode) {
+    document.documentElement.dataset.theme = mode;
+    localStorage.setItem("theme", mode);
+    $id("theme-dark").classList.toggle("active", mode === "dark");
+    $id("theme-light").classList.toggle("active", mode === "light");
+    document.querySelector('meta[name="theme-color"]').content = mode === "light" ? "#f4f4f4" : "#000000";
+  }
+  $id("theme-dark").addEventListener("click", () => setTheme("dark"));
+  $id("theme-light").addEventListener("click", () => setTheme("light"));
+  setTheme(localStorage.getItem("theme") === "light" ? "light" : "dark");
+
+  function setStatus(state, text) {
+    const el = $id("status");
+    el.className = "tagline reveal " + state;
+    el.innerHTML = '<span class="dot"></span>' + text;
+  }
+
+  async function getJSON(path) {
+    const r = await fetch(API + path, { cache: "no-store" });
+    if (!r.ok) throw new Error(path + " -> " + r.status);
+    const ct = r.headers.get("content-type") || "";
+    return ct.includes("json") ? r.json() : r.text();
+  }
+
+  // ---- BLOCKCLOCK ----
+  const cells = [...document.querySelectorAll(".bc-char")];
+  let bcData = { height: "-------", price: "-------", sats: "-------" };
+  const views = ["height", "price", "sats"];
+  let viewIndex = 0;
+
+  function seven(text) {
+    text = String(text).toUpperCase();
+    if (text.length > 7) text = text.slice(-7);
+    return text.padStart(7, " ");
+  }
+
+  function bcShow(text) {
+    seven(text).split("").forEach((ch, i) => {
+      const val = ch === " " ? "" : ch;
+      const el = cells[i];
+      el.classList.toggle("tiny",  /[A-Z₿$]/.test(val));
+      el.classList.toggle("small", val === "$" || val === "S");
+      if (el.textContent !== val) {
+        el.textContent = val;
+        el.classList.remove("flip");
+        void el.offsetWidth;
+        el.classList.add("flip");
+      }
+    });
+  }
+
+  function rotate() {
+    bcShow(bcData[views[viewIndex]]);
+    viewIndex = (viewIndex + 1) % views.length;
+  }
+
+  // ---- Next block fee distribution chart ----
+  // Mirrors mempool.space/mempool-block/0: feeRange percentiles (low -> high)
+  // across % block weight, on a log fee-rate axis. All colors come from CSS
+  // classes so the light/dark theme switch restyles the chart instantly.
+  let nextBlock = null;
+
+  function fmtRate(v) {
+    if (v >= 100) return String(Math.round(v));
+    if (v >= 10)  return v.toFixed(1);
+    return v.toFixed(2);
+  }
+
+  function renderFeeChart() {
+    const host = $id("feechart");
+    if (!nextBlock || !nextBlock.feeRange || !nextBlock.feeRange.length) return;
+
+    const fr  = nextBlock.feeRange;
+    const W   = Math.max(320, host.clientWidth || 600);
+    const H   = 250;
+    const pad = { top: 28, right: 26, bottom: 36, left: 48 };
+    const iw  = W - pad.left - pad.right;
+    const ih  = H - pad.top - pad.bottom;
+
+    const maxV = Math.max(...fr);
+    const minV = Math.min(...fr);
+    const yMin = minV >= 1 ? 1 : 0.1;
+    const yMax = Math.max(maxV, yMin * 10);
+    const logMin = Math.log10(yMin), logMax = Math.log10(yMax);
+
+    const x = i => pad.left + (i / (fr.length - 1)) * iw;
+    const y = v => pad.top + ih - ((Math.log10(Math.max(v, yMin)) - logMin) / (logMax - logMin)) * ih;
+
+    const pts = fr.map((v, i) => [x(i), y(v)]);
+    const baseline = pad.top + ih;
+
+    // gridlines: powers of ten, plus 2x/5x when the range is narrow
+    let ticks = [];
+    for (let p = Math.ceil(logMin); ; p++) {
+      const base = Math.pow(10, p);
+      if (base > yMax * 1.001) break;
+      ticks.push(base);
+    }
+    if (ticks.length <= 2) {
+      ticks = [];
+      for (let p = Math.floor(logMin); Math.pow(10, p) <= yMax; p++) {
+        for (const m of [1, 2, 5]) {
+          const t = m * Math.pow(10, p);
+          if (t >= yMin && t <= yMax * 1.001) ticks.push(t);
+        }
+      }
+    }
+
+    let svg = `<svg viewBox="0 0 ${W} ${H}" width="${W}" height="${H}" role="img" aria-label="Next block fee distribution">`;
+    svg += `<defs><linearGradient id="feefill" x1="0" y1="0" x2="0" y2="1">
+      <stop class="stop-a" offset="0%"/>
+      <stop class="stop-b" offset="100%"/>
+    </linearGradient></defs>`;
+
+    for (const t of ticks) {
+      const ty = y(t);
+      svg += `<line class="grid" x1="${pad.left}" x2="${W - pad.right}" y1="${ty}" y2="${ty}"/>`;
+      svg += `<text class="axis-label" x="${pad.left - 8}" y="${ty + 3.5}" text-anchor="end">${fmtRate(t)}</text>`;
+    }
+
+    for (let p = 0; p <= 100; p += 20) {
+      const tx = pad.left + (p / 100) * iw;
+      svg += `<text class="axis-label" x="${tx}" y="${baseline + 16}" text-anchor="middle">${p}</text>`;
+    }
+    svg += `<text class="axis-name" x="${pad.left + iw / 2}" y="${H - 4}" text-anchor="middle">% weight</text>`;
+
+    const line = monotonePath(pts);
+    svg += `<path d="${line} L${pts[pts.length - 1][0]},${baseline} L${pts[0][0]},${baseline} Z" fill="url(#feefill)"/>`;
+    svg += `<path class="fee-line" d="${line}"/>`;
+
+    pts.forEach(([px, py], i) => {
+      const anchor = i === 0 ? "start" : (i === pts.length - 1 ? "end" : "middle");
+      svg += `<circle class="fee-dot" cx="${px}" cy="${py}" r="3"/>`;
+      svg += `<text class="pt-label" x="${px}" y="${py - 9}" text-anchor="${anchor}">${fmtRate(fr[i])}</text>`;
+    });
+
+    svg += `</svg>`;
+    host.innerHTML = svg;
+  }
+
+  // ---- Cumulative fees chart ----
+  // Transforms the same feeRange data: integrate fee-rate across the block's
+  // weight (each index is an equal slice of weight) to get a running fee total,
+  // then scale so the final point equals the block's real totalFees. Output is
+  // BTC accumulated from 0% -> 100% weight, sharing the x-axis with the chart
+  // above. Reuses .feechart styling; the .cum class repaints it green.
+  function cumulativeBTC(fr, totalSat) {
+    const N = fr.length;
+    const raw = [0];
+    for (let i = 0; i < N - 1; i++) raw.push(raw[i] + (fr[i] + fr[i + 1]) / 2);
+    const totalRaw = raw[N - 1] || 1;
+    return raw.map(v => (v / totalRaw) * (totalSat || 0) / 1e8);  // BTC per point
+  }
+
+  function interpAt(arr, frac) {
+    const N = arr.length, pos = frac * (N - 1), i = Math.floor(pos);
+    if (i >= N - 1) return arr[N - 1];
+    return arr[i] + (arr[i + 1] - arr[i]) * (pos - i);
+  }
+
+  function niceTicks(max, count) {
+    if (!(max > 0)) return [0];
+    const rough = max / count;
+    const mag = Math.pow(10, Math.floor(Math.log10(rough)));
+    const norm = rough / mag;
+    const step = (norm <= 1 ? 1 : norm <= 2 ? 2 : norm <= 5 ? 5 : 10) * mag;
+    const ticks = [];
+    for (let t = 0; t <= max + step * 0.5; t += step) ticks.push(t);
+    return ticks;
+  }
+
+  function fmtBTC(v, step) {
+    if (v === 0) return "0";
+    const dec = Math.min(8, Math.max(0, Math.ceil(-Math.log10(step || v))));
+    return v.toFixed(dec);
+  }
+
+  // Monotone cubic (Fritsch–Carlson) spline — used by both charts. It never
+  // overshoots, so a curve through non-decreasing data (sorted fee-rate
+  // percentiles, or a cumulative running total) is guaranteed never to slope
+  // downward between points.
+  function monotonePath(pts) {
+    const n = pts.length;
+    if (n < 2) return `M${pts[0][0]},${pts[0][1]}`;
+    const xs = pts.map(p => p[0]), ys = pts.map(p => p[1]);
+    const dx = [], dy = [], sl = [];
+    for (let i = 0; i < n - 1; i++) { dx[i] = xs[i + 1] - xs[i]; dy[i] = ys[i + 1] - ys[i]; sl[i] = dy[i] / dx[i]; }
+    const m = []; m[0] = sl[0]; m[n - 1] = sl[n - 2];
+    for (let i = 1; i < n - 1; i++) m[i] = (sl[i - 1] * sl[i] <= 0) ? 0 : (sl[i - 1] + sl[i]) / 2;
+    for (let i = 0; i < n - 1; i++) {
+      if (sl[i] === 0) { m[i] = 0; m[i + 1] = 0; continue; }
+      const a = m[i] / sl[i], b = m[i + 1] / sl[i], s = a * a + b * b;
+      if (s > 9) { const t = 3 / Math.sqrt(s); m[i] = t * a * sl[i]; m[i + 1] = t * b * sl[i]; }
+    }
+    let d = `M${xs[0]},${ys[0]}`;
+    for (let i = 0; i < n - 1; i++) {
+      const c1x = xs[i] + dx[i] / 3, c1y = ys[i] + m[i] * dx[i] / 3;
+      const c2x = xs[i + 1] - dx[i] / 3, c2y = ys[i + 1] - m[i + 1] * dx[i] / 3;
+      d += `C${c1x},${c1y},${c2x},${c2y},${xs[i + 1]},${ys[i + 1]}`;
+    }
+    return d;
+  }
+
+  function renderCumChart() {
+    const host = $id("cumchart");
+    if (!host) return;
+    if (!nextBlock || !nextBlock.feeRange || nextBlock.feeRange.length < 2) return;
+
+    const fr  = nextBlock.feeRange;
+    const N   = fr.length;
+    const cum = cumulativeBTC(fr, Number(nextBlock.totalFees));   // BTC, length N
+
+    const W   = Math.max(320, host.clientWidth || 600);
+    const H   = 250;
+    const pad = { top: 28, right: 26, bottom: 36, left: 60 };
+    const iw  = W - pad.left - pad.right;
+    const ih  = H - pad.top - pad.bottom;
+
+    const yMax = Math.max(cum[N - 1] * 1.08, 1e-9);   // linear axis, 0 -> total
+    const x = i => pad.left + (i / (N - 1)) * iw;
+    const y = v => pad.top + ih - (v / yMax) * ih;
+
+    const pts = cum.map((v, i) => [x(i), y(v)]);
+    const baseline = pad.top + ih;
+
+    const ticks   = niceTicks(yMax, 4);
+    const stepEst = ticks.length > 1 ? ticks[1] - ticks[0] : yMax;
+
+    let svg = `<svg viewBox="0 0 ${W} ${H}" width="${W}" height="${H}" role="img" aria-label="Cumulative block fees across weight">`;
+    svg += `<defs><linearGradient id="cumfill" x1="0" y1="0" x2="0" y2="1">
+      <stop class="stop-a" offset="0%"/>
+      <stop class="stop-b" offset="100%"/>
+    </linearGradient></defs>`;
+
+    for (const t of ticks) {
+      if (t > yMax) continue;
+      const ty = y(t);
+      svg += `<line class="grid" x1="${pad.left}" x2="${W - pad.right}" y1="${ty}" y2="${ty}"/>`;
+      svg += `<text class="axis-label" x="${pad.left - 8}" y="${ty + 3.5}" text-anchor="end">${fmtBTC(t, stepEst)}</text>`;
+    }
+
+    for (let p = 0; p <= 100; p += 20) {
+      const tx = pad.left + (p / 100) * iw;
+      svg += `<text class="axis-label" x="${tx}" y="${baseline + 16}" text-anchor="middle">${p}</text>`;
+    }
+    svg += `<text class="axis-name" x="${pad.left + iw / 2}" y="${H - 4}" text-anchor="middle">% weight</text>`;
+
+    const line = monotonePath(pts);
+    svg += `<path d="${line} L${pts[N - 1][0]},${baseline} L${pts[0][0]},${baseline} Z" fill="url(#cumfill)"/>`;
+    svg += `<path class="fee-line" d="${line}"/>`;
+
+    pts.forEach(([px, py]) => {
+      svg += `<circle class="fee-dot" cx="${px}" cy="${py}" r="3"/>`;
+    });
+    // annotate the running total at the final (100% weight) point
+    svg += `<text class="pt-label" x="${pts[N - 1][0]}" y="${pts[N - 1][1] - 9}" text-anchor="end">${cum[N - 1].toFixed(3)}</text>`;
+
+    svg += `</svg>`;
+    host.innerHTML = svg;
+  }
+
+  function updateCumStats(mb) {
+    if (!mb.feeRange || mb.feeRange.length < 2) return;
+    const cum   = cumulativeBTC(mb.feeRange, Number(mb.totalFees));
+    const total = cum[cum.length - 1];
+    $id("cum-total").textContent = total.toFixed(3) + " BTC";
+    const topShare = total > 0 ? (total - interpAt(cum, 0.80)) / total * 100 : 0;
+    $id("cum-top").textContent = Math.round(topShare) + "% of fees";
+  }
+
+  // ---- Lorenz curve & Gini coefficient (chart 3) ----
+  // The cumulative curve above, normalized to shares, is a Lorenz curve:
+  //   x = cumulative share of block weight, y = cumulative share of fees,
+  // with weight ordered low-fee -> high-fee. The straight diagonal is the line
+  // of perfect equality (every unit of weight pays the same fee). The Gini
+  // coefficient is twice the area between that line and the Lorenz curve, i.e.
+  // 1 - 2*(area under the curve). We model fee rate as piecewise-linear across
+  // weight (the same model behind the cumulative chart), which makes the Lorenz
+  // curve piecewise-quadratic: smooth, monotone AND convex - the shape a Lorenz
+  // curve must have - and integrable in closed form, so the reported Gini equals
+  // the drawn area exactly. Resolution is limited by mempool's percentile count.
+  function lorenzModel(fr) {
+    const N = fr.length;
+    const raw = [0];
+    for (let i = 0; i < N - 1; i++) raw.push(raw[i] + (fr[i] + fr[i + 1]) / 2);
+    const T = raw[N - 1] || 1;
+    const Dx = 1 / (N - 1);
+    // exact area under the piecewise-quadratic Lorenz curve, in closed form
+    let B = 0;
+    for (let i = 0; i < N - 1; i++) B += (Dx / T) * (raw[i] + fr[i] / 3 + fr[i + 1] / 6);
+    const gini = Math.max(0, Math.min(1, 1 - 2 * B));
+    const pts = raw.map((v, i) => [i / (N - 1), v / T]);   // data points [weightShare, feeShare]
+    const slope = fr.map(r => (N - 1) * r / T);            // dL/dx at each point = local fee rate
+    return { pts, slope, gini, raw, fr, T };
+  }
+
+  // fee share at a given weight share, evaluated on the exact quadratic curve
+  function lorenzEval(m, x) {
+    const N = m.pts.length;
+    const seg = Math.min(N - 2, Math.max(0, Math.floor(x * (N - 1))));
+    const s = x * (N - 1) - seg;
+    return (m.raw[seg] + m.fr[seg] * s + (m.fr[seg + 1] - m.fr[seg]) * s * s / 2) / m.T;
+  }
+
+  // quadratic-Bezier control point (share space) for segment i: the intersection
+  // of the endpoint tangents, which reproduces the parabola exactly. Convex data
+  // keeps it inside the segment box (so the curve stays monotone + convex); a
+  // flat or defensively non-convex segment falls back to the chord midpoint.
+  function lorenzCtrl(m, i) {
+    const [x0, y0] = m.pts[i], [x1, y1] = m.pts[i + 1];
+    const s0 = m.slope[i], s1 = m.slope[i + 1];
+    if (s1 - s0 < 1e-9) return [(x0 + x1) / 2, (y0 + y1) / 2];
+    const cx = (y1 - y0 + s0 * x0 - s1 * x1) / (s0 - s1);
+    return [cx, y0 + s0 * (cx - x0)];
+  }
+
+  function renderGiniChart() {
+    const host = $id("ginichart");
+    if (!host) return;
+    if (!nextBlock || !nextBlock.feeRange || nextBlock.feeRange.length < 2) return;
+
+    const m = lorenzModel(nextBlock.feeRange);
+    const N = m.pts.length;
+    const gini = m.gini;
+
+    const W   = Math.max(320, host.clientWidth || 600);
+    const H   = 250;
+    const pad = { top: 28, right: 26, bottom: 36, left: 48 };
+    const iw  = W - pad.left - pad.right;
+    const ih  = H - pad.top - pad.bottom;
+
+    const X = s => pad.left + s * iw;              // s = share 0..1
+    const Y = s => pad.top + ih - s * ih;
+    const baseline = pad.top + ih;
+
+    const P = m.pts.map(([wx, fy]) => [X(wx), Y(fy)]);
+    const C = [];
+    for (let i = 0; i < N - 1; i++) { const [cx, cy] = lorenzCtrl(m, i); C.push([X(cx), Y(cy)]); }
+    const eqStart = P[0], eqEnd = P[N - 1];       // (0,0) and (1,1) in screen space
+
+    let svg = `<svg viewBox="0 0 ${W} ${H}" width="${W}" height="${H}" role="img" aria-label="Lorenz curve of fee concentration, Gini ${gini.toFixed(2)}">`;
+
+    // square gridlines + axis labels at 0/20/.../100 on both axes
+    for (let p = 0; p <= 100; p += 20) {
+      const gy = Y(p / 100);
+      svg += `<line class="grid" x1="${pad.left}" x2="${W - pad.right}" y1="${gy}" y2="${gy}"/>`;
+      svg += `<text class="axis-label" x="${pad.left - 8}" y="${gy + 3.5}" text-anchor="end">${p}</text>`;
+      svg += `<text class="axis-label" x="${X(p / 100)}" y="${baseline + 16}" text-anchor="middle">${p}</text>`;
+    }
+    svg += `<text class="axis-name" x="${pad.left + iw / 2}" y="${H - 4}" text-anchor="middle">% weight (low → high fee)</text>`;
+
+    // exact piecewise-quadratic Lorenz curve (one quadratic Bezier per segment)
+    let lorenzLine = `M${P[0][0]},${P[0][1]}`;
+    for (let i = 0; i < N - 1; i++) lorenzLine += `Q${C[i][0]},${C[i][1]} ${P[i + 1][0]},${P[i + 1][1]}`;
+
+    // shaded inequality gap = equality line out to (1,1), then the SAME curve back
+    let areaPath = `M${eqStart[0]},${eqStart[1]} L${eqEnd[0]},${eqEnd[1]}`;
+    for (let i = N - 2; i >= 0; i--) areaPath += ` Q${C[i][0]},${C[i][1]} ${P[i][0]},${P[i][1]}`;
+    svg += `<path class="gini-area" d="${areaPath} Z"/>`;
+
+    // perfect-equality reference line
+    svg += `<line class="equality" x1="${eqStart[0]}" y1="${eqStart[1]}" x2="${eqEnd[0]}" y2="${eqEnd[1]}"/>`;
+
+    // Lorenz curve + points
+    svg += `<path class="fee-line" d="${lorenzLine}"/>`;
+    P.forEach(([px, py]) => { svg += `<circle class="fee-dot" cx="${px}" cy="${py}" r="3"/>`; });
+
+    // annotations in the empty space above the diagonal
+    svg += `<text class="gini-big" x="${X(0.035)}" y="${Y(0.82)}">Gini ${gini.toFixed(2)}</text>`;
+    svg += `<text class="gini-cap" x="${X(0.035)}" y="${Y(0.82) + 15}">0 = even &#183; 1 = skewed</text>`;
+    svg += `<text class="equality-cap" x="${X(0.5)}" y="${Y(0.5) - 22}" text-anchor="middle">line of equality</text>`;
+
+    svg += `</svg>`;
+    host.innerHTML = svg;
+  }
+
+  function updateGiniStats(mb) {
+    if (!mb.feeRange || mb.feeRange.length < 2) return;
+    const m = lorenzModel(mb.feeRange);
+    $id("gini-val").textContent = m.gini.toFixed(3);
+    // fee share earned by the highest-fee top w of weight = 1 - L(1 - w)
+    const topShare = w => Math.round((1 - lorenzEval(m, 1 - w)) * 100) + "% of fees";
+    $id("gini-top20").textContent = topShare(0.20);
+    $id("gini-top10").textContent = topShare(0.10);
+    $id("gini-top5").textContent  = topShare(0.05);
+    $id("gini-top1").textContent  = topShare(0.01);
+  }
+
+  // ---- Block-time distribution chart (exponential wait-times / Poisson process) ----
+  // Bitcoin block discovery is a Poisson process, so the wait BETWEEN blocks is
+  // exponentially distributed with a 600s (10 min) mean — the difficulty target.
+  // This plots that wait-time density as % chance per second (the per-minute
+  // density (1/10)e^(-t/10) / 60), shades the probability mass already elapsed (which is
+  // the exponential CDF == the "Block Found Percentile"), marks the mean, and drops
+  // a live marker at the current time-since-last-block. The static curve renders
+  // immediately; the marker appears once the tip block timestamp is known and then
+  // advances once per second with the clock.
+  const BLOCK_MEAN_MIN = 10;   // 600s difficulty-adjustment target, in minutes
+
+  // Adaptive percent formatter for the shrinking "next minute" area: ~2 significant
+  // figures, gaining decimals as the value falls, capped at 5 decimal places. Below
+  // that resolution it shows "<0.00001%" instead of a misleading 0.
+  function fmtSmallPct(v) {
+    if (!(v > 0)) return "0%";
+    const d = Math.min(5, Math.max(1, 1 - Math.floor(Math.log10(v))));
+    if (Number(v.toFixed(d)) === 0) return "<0.00001%";
+    return v.toFixed(d) + "%";
+  }
+
+  function renderPoissonChart() {
+    const host = $id("poissonchart");
+    if (!host) return;
+
+    const mean = BLOCK_MEAN_MIN;
+    let elapsedMin = null;
+    if (lastBlockTs != null) elapsedMin = Math.max(0, (Date.now() / 1000 - lastBlockTs) / 60);
+
+    const val = t => (100 / (mean * 60)) * Math.exp(-t / mean);   // density as % found / second
+
+    const W   = Math.max(320, host.clientWidth || 600);
+    const H   = 250;
+    const pad = { top: 28, right: 26, bottom: 36, left: 52 };
+    const iw  = W - pad.left - pad.right;
+    const ih  = H - pad.top - pad.bottom;
+
+    // 0..30 min by default; for longer waits the axis steps up
+    // 30 -> 60 -> 90 -> 180 -> then whole hours so the marker stays on-chart.
+    let xMax = 30;
+    if (elapsedMin != null) {
+      xMax = elapsedMin <= 30  ? 30
+           : elapsedMin <= 60  ? 60
+           : elapsedMin <= 90  ? 90
+           : elapsedMin <= 180 ? 180
+           : Math.ceil(elapsedMin / 60) * 60;
+    }
+
+    const yMax = val(0) * 1.12;                            // peak density is at t = 0
+    const x = t => pad.left + (t / xMax) * iw;
+    const y = v => pad.top + ih - (v / yMax) * ih;
+    const baseline = pad.top + ih;
+
+    const N = 72, pts = [];
+    for (let i = 0; i <= N; i++) { const t = (i / N) * xMax; pts.push([x(t), y(val(t))]); }
+
+    let svg = `<svg viewBox="0 0 ${W} ${H}" width="${W}" height="${H}" role="img" aria-label="Poisson distribution of block found time">`;
+    svg += `<defs><linearGradient id="poissonfill" x1="0" y1="0" x2="0" y2="1">
+      <stop class="stop-a" offset="0%"/>
+      <stop class="stop-b" offset="100%"/>
+    </linearGradient></defs>`;
+
+    // y gridlines + labels (0,0.05,...,0.15 % per second)
+    for (let v = 0; v <= val(0) + 1e-6; v += 0.05) {
+      const gy = y(v);
+      svg += `<line class="grid" x1="${pad.left}" x2="${W - pad.right}" y1="${gy}" y2="${gy}"/>`;
+      svg += `<text class="axis-label" x="${pad.left - 8}" y="${gy + 3.5}" text-anchor="end">${v === 0 ? "0" : v.toFixed(2)}</text>`;
+    }
+    // x labels — widen the tick step as the axis grows so the marks stay readable
+    const xStep = [10, 15, 30, 60, 120].find(c => xMax / c <= 8) || 120;
+    for (let t = 0; t <= xMax + 1e-6; t += xStep) {
+      svg += `<text class="axis-label" x="${x(t)}" y="${baseline + 16}" text-anchor="middle">${t}</text>`;
+    }
+    if (xMax % xStep !== 0) {   // always label the right-hand edge
+      svg += `<text class="axis-label" x="${x(xMax)}" y="${baseline + 16}" text-anchor="middle">${xMax}</text>`;
+    }
+    svg += `<text class="axis-name" x="${pad.left + iw / 2}" y="${H - 4}" text-anchor="middle">minutes since last block</text>`;
+    svg += `<text class="axis-name" transform="rotate(-90)" x="${-(pad.top + ih / 2)}" y="13" text-anchor="middle">% found / sec</text>`;
+
+    const line = monotonePath(pts);
+    svg += `<path d="${line} L${pts[N][0]},${baseline} L${pts[0][0]},${baseline} Z" fill="url(#poissonfill)"/>`;
+
+    // shaded "already elapsed" mass (0..now) — equals the exponential CDF
+    if (elapsedMin != null && elapsedMin > 0) {
+      const ne = Math.min(elapsedMin, xMax);
+      const M = 56, ep = [];
+      for (let i = 0; i <= M; i++) { const t = (i / M) * ne; ep.push([x(t), y(val(t))]); }
+      let area = monotonePath(ep);
+      area += ` L${x(ne)},${baseline} L${x(0)},${baseline} Z`;
+      svg += `<path class="elapsed-area" d="${area}"/>`;
+    }
+
+    // shaded sliver for the NEXT minute (now .. now+1) — its area is exactly the
+    // value the "...in the next minute" figure reports.
+    if (elapsedMin != null) {
+      const a = Math.min(elapsedMin, xMax), b = Math.min(elapsedMin + 1, xMax);
+      if (b > a) {
+        const M2 = 16, sp = [];
+        for (let i = 0; i <= M2; i++) { const t = a + (i / M2) * (b - a); sp.push([x(t), y(val(t))]); }
+        let sl = monotonePath(sp);
+        sl += ` L${x(b)},${baseline} L${x(a)},${baseline} Z`;
+        svg += `<path class="next-area" d="${sl}"/>`;
+      }
+    }
+
+    // mean reference line at t = 10 min
+    svg += `<line class="mean-line" x1="${x(mean)}" y1="${baseline}" x2="${x(mean)}" y2="${y(val(mean))}"/>`;
+
+    // the wait-time density curve
+    svg += `<path class="fee-line" d="${line}"/>`;
+
+    // live "now" marker — the three summary stats now live in the card's stats row
+    if (elapsedMin != null) {
+      const ne = Math.min(elapsedMin, xMax);
+      svg += `<line class="now-line" x1="${x(ne)}" y1="${baseline}" x2="${x(ne)}" y2="${y(val(ne))}"/>`;
+      svg += `<circle class="now-dot" cx="${x(ne)}" cy="${y(val(ne))}" r="3.5"/>`;
+      const lblRight = x(ne) > W - pad.right - 60;
+      svg += `<text class="now-cap" x="${lblRight ? x(ne) - 8 : x(ne) + 8}" y="${y(val(ne)) - 8}" text-anchor="${lblRight ? "end" : "start"}">${fmtElapsed(elapsedMin * 60)}</text>`;
+    }
+
+    svg += `</svg>`;
+    host.innerHTML = svg;
+  }
+
+  function updateNextBlock(mb) {
+    nextBlock = mb;
+    $id("nb-median").textContent = "~" + fmtRate(mb.medianFee) + " sat/vB";
+    $id("nb-span").textContent   = fmtRate(Math.min(...mb.feeRange)) + " – " + fmtRate(Math.max(...mb.feeRange)) + " sat/vB";
+    $id("nb-fees").textContent   = (mb.totalFees / 1e8).toFixed(3) + " BTC";
+    $id("nb-txs").textContent    = nf.format(mb.nTx);
+    renderFeeChart();
+    updateCumStats(mb);
+    renderCumChart();
+    updateGiniStats(mb);
+    renderGiniChart();
+  }
+
+  let chartResizeTimer = null;
+  window.addEventListener("resize", () => {
+    clearTimeout(chartResizeTimer);
+    chartResizeTimer = setTimeout(() => { renderFeeChart(); renderCumChart(); renderGiniChart(); renderPoissonChart(); }, 150);
+  });
+
+  // ---- Next-block clock: stopwatch + Poisson find-percentile, ticked locally ----
+  // Driven solely by the tip block's miner timestamp (from /v1/blocks). Block
+  // intervals are exponential with a 600s mean (the difficulty-adjustment target),
+  // so the percentile of the current wait is the exponential CDF 1 - e^(-t/600).
+  // The network sets WHEN the last block was; the device ticks HOW LONG AGO locally.
+  let lastBlockTs = null;
+
+  function fmtElapsed(sec) {
+    sec = Math.max(0, Math.floor(sec));
+    const h = Math.floor(sec / 3600), m = Math.floor((sec % 3600) / 60), s = sec % 60;
+    const p = n => String(n).padStart(2, "0");
+    return h > 0 ? `${h}:${p(m)}:${p(s)}` : `${p(m)}:${p(s)}`;
+  }
+
+  function tickBlockClock() {
+    if (lastBlockTs == null) return;
+    const elapsed = Math.max(0, Date.now() / 1000 - lastBlockTs);   // seconds since tip block
+    $id("block-age").textContent = fmtElapsed(elapsed);
+    // exponential CDF: asymptotic, so never truly 100%. Always show tenths, and
+    // cap at 99.9+% once past 99.9% so it never rounds up to 100%.
+    const pctile  = (1 - Math.exp(-elapsed / 600)) * 100;
+    const pctDisp = pctile > 99.9 ? "99.9+%" : pctile.toFixed(1) + "%";
+    $id("block-pct").textContent = pctDisp;
+    if ($id("pz-pct")) $id("pz-pct").textContent = pctDisp;
+    if ($id("pz-area")) $id("pz-area").textContent = fmtSmallPct((Math.exp(-elapsed / 600) - Math.exp(-(elapsed + 60) / 600)) * 100);
+    renderPoissonChart();
+  }
+
+  // ---- Relative "updated" timestamp ----
+  let lastUpdated = null;
+
+  function fmtRel(d) {
+    if (!d) return "—";
+    const s = Math.max(0, Math.round((Date.now() - d) / 1000));
+    if (s < 5)  return "just now";
+    if (s < 60) return s + "s ago";
+    const m = Math.floor(s / 60);
+    if (m < 60) return m + "m ago";
+    const h = Math.floor(m / 60);
+    return h + "h ago";
+  }
+
+  function tickUpdated() {
+    $id("updated").textContent = fmtRel(lastUpdated);
+  }
+
+  // ---- Refresh: each endpoint fails independently ----
+  // returns true if any live data was obtained, false if fully offline
+  async function refresh() {
+    const [height, fees, prices, mempoolBlocks, blocks] = await Promise.all([
+      getJSON("/blocks/tip/height").catch(() => null),
+      getJSON("/v1/fees/recommended").catch(() => null),
+      getJSON("/v1/prices").catch(() => null),
+      getJSON("/v1/fees/mempool-blocks").catch(() => null),
+      getJSON("/v1/blocks").catch(() => null),
+    ]);
+
+    if (height != null) {
+      const blockHeight = Number(height);
+      $id("height").textContent = nf.format(blockHeight);
+      bcData.height = "▦" + blockHeight;
+    }
+
+    if (prices && prices.USD) {
+      const usd = Number(prices.USD);
+      const sats = Math.round(100000000 / usd);
+      $id("price").innerHTML = "$" + nf.format(usd);
+      $id("price-sub").textContent = "spot price · USD";
+      $id("satsdollar").textContent = nf.format(sats);
+      bcData.price = "$" + Math.round(usd);
+      bcData.sats  = sats + "₿/$";
+    }
+
+    if (fees) {
+      const fee = (pfx, v) => '<span class="pfx">' + pfx + ': </span>' + Number(v).toFixed(1);
+      $id("fee-high").innerHTML = fee("H",  fees.fastestFee);
+      $id("fee-med").innerHTML  = fee("M",  fees.halfHourFee);
+      $id("fee-low").innerHTML  = fee("L",  fees.hourFee);
+      $id("fee-none").innerHTML = fee("NP", fees.economyFee);
+    }
+
+    if (blocks && blocks.length && blocks[0] && blocks[0].timestamp != null) {
+      lastBlockTs = Number(blocks[0].timestamp);   // tip block's miner timestamp (Unix s)
+      tickBlockClock();                            // update now, then it ticks once per second
+    }
+
+    if (mempoolBlocks && mempoolBlocks.length) {
+      updateNextBlock(mempoolBlocks[0]);
+    }
+
+    const got = [height, fees, prices, mempoolBlocks, blocks].filter(x => x != null).length;
+    if (got === 5) {
+      lastUpdated = Date.now();
+      $id("updated").title = new Date(lastUpdated).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit", second: "2-digit" });
+      tickUpdated();
+      setStatus("live", "Live");
+      return true;
+    } else if (got > 0) {
+      lastUpdated = Date.now();
+      $id("updated").title = new Date(lastUpdated).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit", second: "2-digit" });
+      tickUpdated();
+      setStatus("live", "Live (partial)");
+      return true;
+    } else {
+      bcData.height = "OFFLINE";
+      bcData.price  = "-------";
+      bcData.sats   = "-------";
+      return false;
+    }
+  }
+
+  // ---- Refresh loop: exponential backoff, paused while tab hidden ----
+  const REFRESH_MIN = 10000, REFRESH_MAX = 300000;   // 10s … 5m
+  let refreshDelay = REFRESH_MIN;
+  let refreshTimer = null;
+
+  async function refreshAndReschedule() {
+    const ok = await refresh();
+    if (ok) {
+      refreshDelay = REFRESH_MIN;
+    } else {
+      refreshDelay = Math.min(refreshDelay * 2, REFRESH_MAX);
+      setStatus("err", `Offline — retry in ${Math.round(refreshDelay / 1000)}s`);
+    }
+    scheduleRefresh();
+  }
+
+  function scheduleRefresh() {
+    clearTimeout(refreshTimer);
+    if (document.hidden) return;             // resumed by visibilitychange
+    refreshTimer = setTimeout(refreshAndReschedule, refreshDelay);
+  }
+
+  document.addEventListener("visibilitychange", () => {
+    if (document.hidden) {
+      clearTimeout(refreshTimer);
+    } else {
+      refreshAndReschedule();                // catch up immediately on return
+    }
+  });
+
+  // ---- Boot ----
+  setInterval(() => { tickUpdated(); tickBlockClock(); }, 1000);
+  renderPoissonChart();
+
+  refreshAndReschedule().then(() => {
+    rotate();
+    setInterval(rotate, 7000);
+  });
+</script>
+</body>
+</html>
