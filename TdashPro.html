@@ -235,6 +235,15 @@
     .feechart .pt-label { fill: var(--text); font-family: "Inter", sans-serif; font-size: 11px; font-weight: 600; font-feature-settings: "tnum" 1; }
     .feechart .axis-name { fill: var(--text-2); font-family: "Inter", sans-serif; font-size: 11px; font-weight: 500; }
 
+    /* H/M/L priority-fee dots overlaid on the next-block fee curve. The dot
+       carries the color (H red / M yellow / L green); the letter stays neutral
+       so it reads in both themes (a yellow "M" was invisible on the light bg). */
+    .feechart .prio-dot { stroke: var(--card); stroke-width: 1.5; }
+    .feechart .prio-dot.hi  { fill: var(--red); }
+    .feechart .prio-dot.med { fill: var(--yellow); }
+    .feechart .prio-dot.low { fill: var(--green); }
+    .feechart .prio-label { fill: var(--text); font-family: "Inter", sans-serif; font-size: 12px; font-weight: 700; font-feature-settings: "tnum" 1; }
+
     /* Every curve's line, dots, and under-curve gradient inherit the base blue
        (--accent) from .feechart above, so all charts match the Next Block Fee Curve. */
 
@@ -507,6 +516,7 @@
   // across % block weight, on a log fee-rate axis. All colors come from CSS
   // classes so the light/dark theme switch restyles the chart instantly.
   let nextBlock = null;
+  let priorityFees = null;   // latest /v1/fees/precise, drives the H/M/L curve dots
 
   function fmtRate(v) {
     if (v >= 100) return String(Math.round(v));
@@ -582,6 +592,70 @@
       svg += `<text class="pt-label" x="${px}" y="${py - 9}" text-anchor="${anchor}">${fmtRate(fr[i])}</text>`;
     });
 
+    // ---- H / M / L priority-fee dots, sitting on the curve ----
+    // Each priority fee F (from /v1/fees/precise) is placed at the % weight where
+    // the curve's rate equals F, then snapped onto the drawn monotone cubic; an F
+    // outside this block's [min, max] fee range gets no dot. The H/M/L letter is
+    // then positioned to clear every other text label on the chart -- the per-point
+    // fee values, the axis ticks, and the other priority letters -- trying below
+    // the dot first, then above, then progressively further out.
+    if (priorityFees) {
+      const mxs = pts.map(p => p[0]), mys = pts.map(p => p[1]);   // screen space; y already log-mapped
+      const mt = monotoneTangents(mxs, mys);
+      const lo = fr[0], hi = fr[fr.length - 1];
+
+      // rough bounding box of an SVG <text>, from its anchor + font size
+      const tbox = (x, y, str, fs, anchor) => {
+        const w = String(str).length * fs * 0.62;
+        const x0 = anchor === "end" ? x - w : anchor === "middle" ? x - w / 2 : x;
+        return { x0: x0 - 1, x1: x0 + w + 1, y0: y - fs * 0.8 - 1, y1: y + fs * 0.25 + 1 };
+      };
+      const overlaps = (p, q) => !(p.x1 < q.x0 || p.x0 > q.x1 || p.y1 < q.y0 || p.y0 > q.y1);
+
+      // every other text label already drawn on this chart, as boxes to avoid
+      const obstacles = [];
+      pts.forEach(([px, py], i) => {
+        const anchor = i === 0 ? "start" : (i === pts.length - 1 ? "end" : "middle");
+        obstacles.push(tbox(px, py - 9, fmtRate(fr[i]), 11, anchor));
+      });
+      for (const tk of ticks) obstacles.push(tbox(pad.left - 8, y(tk) + 3.5, fmtRate(tk), 11, "end"));
+      for (let p = 0; p <= 100; p += 20) obstacles.push(tbox(pad.left + (p / 100) * iw, baseline + 16, String(p), 11, "middle"));
+
+      const defs = [
+        ["H", priorityFees.fastestFee,  "hi"],
+        ["M", priorityFees.halfHourFee, "med"],
+        ["L", priorityFees.hourFee,     "low"],
+      ];
+      const placed = [];   // priority letters already positioned, also avoided
+      for (const [label, F, cls] of defs) {
+        if (!(F >= lo && F <= hi)) continue;                     // in-range gate
+        let si = 0;
+        while (si < fr.length - 2 && !(F >= fr[si] && F <= fr[si + 1])) si++;
+        const a = fr[si], b = fr[si + 1];
+        // log-linear seed: where the straight chord between fr[si],fr[si+1] hits F
+        let t = (a > 0 && b > a) ? (Math.log(F) - Math.log(a)) / (Math.log(b) - Math.log(a))
+                                 : (b > a ? (F - a) / (b - a) : 0);
+        t = Math.max(0, Math.min(1, t));
+        const mpx = mxs[si] + t * (mxs[si + 1] - mxs[si]);
+        const mpy = monotoneHermiteY(mxs, mys, mt, si, t);        // snap onto the line
+
+        // try below the dot, then above, then further out; take the first spot
+        // that clears every obstacle and previously placed priority letter.
+        const cands = [mpy + 15, mpy - 12, mpy + 27, mpy - 24, mpy + 39, mpy - 36];
+        let ly = null, fallback = null;
+        for (const cy of cands) {
+          if (cy - 9.6 < pad.top || cy + 3 > baseline) continue;  // keep the letter inside the plot
+          if (fallback === null) fallback = cy;
+          const box = tbox(mpx, cy, label, 12, "middle");
+          if (![...obstacles, ...placed].some(o => overlaps(box, o))) { ly = cy; break; }
+        }
+        if (ly === null) ly = fallback !== null ? fallback : mpy + 15;
+        placed.push(tbox(mpx, ly, label, 12, "middle"));
+        svg += `<circle class="prio-dot ${cls}" cx="${mpx}" cy="${mpy}" r="3"/>`;
+        svg += `<text class="prio-label" x="${mpx}" y="${ly}" text-anchor="middle">${label}</text>`;
+      }
+    }
+
     svg += `</svg>`;
     host.innerHTML = svg;
   }
@@ -627,12 +701,13 @@
   // overshoots, so a curve through non-decreasing data (sorted fee-rate
   // percentiles, or a cumulative running total) is guaranteed never to slope
   // downward between points.
-  function monotonePath(pts) {
-    const n = pts.length;
-    if (n < 2) return `M${pts[0][0]},${pts[0][1]}`;
-    const xs = pts.map(p => p[0]), ys = pts.map(p => p[1]);
-    const dx = [], dy = [], sl = [];
-    for (let i = 0; i < n - 1; i++) { dx[i] = xs[i + 1] - xs[i]; dy[i] = ys[i + 1] - ys[i]; sl[i] = dy[i] / dx[i]; }
+  // Fritsch-Carlson monotone-cubic tangents for ascending xs/ys. Shared by the
+  // line renderer and the H/M/L marker placement so a marker sampled from these
+  // tangents lands exactly on the drawn curve.
+  function monotoneTangents(xs, ys) {
+    const n = xs.length;
+    const sl = [];
+    for (let i = 0; i < n - 1; i++) sl[i] = (ys[i + 1] - ys[i]) / (xs[i + 1] - xs[i]);
     const m = []; m[0] = sl[0]; m[n - 1] = sl[n - 2];
     for (let i = 1; i < n - 1; i++) m[i] = (sl[i - 1] * sl[i] <= 0) ? 0 : (sl[i - 1] + sl[i]) / 2;
     for (let i = 0; i < n - 1; i++) {
@@ -640,10 +715,31 @@
       const a = m[i] / sl[i], b = m[i + 1] / sl[i], s = a * a + b * b;
       if (s > 9) { const t = 3 / Math.sqrt(s); m[i] = t * a * sl[i]; m[i + 1] = t * b * sl[i]; }
     }
+    return m;
+  }
+
+  // Evaluate that cubic on segment i at local parameter t in [0,1] (Hermite
+  // basis), using the same xs/ys/m monotonePath drew from, so the point lies on
+  // the rendered line.
+  function monotoneHermiteY(xs, ys, m, i, t) {
+    const h = xs[i + 1] - xs[i];
+    const t2 = t * t, t3 = t2 * t;
+    return (2 * t3 - 3 * t2 + 1) * ys[i]
+         + (t3 - 2 * t2 + t) * h * m[i]
+         + (-2 * t3 + 3 * t2) * ys[i + 1]
+         + (t3 - t2) * h * m[i + 1];
+  }
+
+  function monotonePath(pts) {
+    const n = pts.length;
+    if (n < 2) return `M${pts[0][0]},${pts[0][1]}`;
+    const xs = pts.map(p => p[0]), ys = pts.map(p => p[1]);
+    const m = monotoneTangents(xs, ys);
     let d = `M${xs[0]},${ys[0]}`;
     for (let i = 0; i < n - 1; i++) {
-      const c1x = xs[i] + dx[i] / 3, c1y = ys[i] + m[i] * dx[i] / 3;
-      const c2x = xs[i + 1] - dx[i] / 3, c2y = ys[i + 1] - m[i + 1] * dx[i] / 3;
+      const dx = xs[i + 1] - xs[i];
+      const c1x = xs[i] + dx / 3, c1y = ys[i] + m[i] * dx / 3;
+      const c2x = xs[i + 1] - dx / 3, c2y = ys[i + 1] - m[i + 1] * dx / 3;
       d += `C${c1x},${c1y},${c2x},${c2y},${xs[i + 1]},${ys[i + 1]}`;
     }
     return d;
@@ -1052,10 +1148,11 @@
 
     // Priority fees from mempool.space /v1/fees/precise — same four targets as the
     // recommended endpoint but unrounded, so the boxes keep their real decimals
-    // (e.g. 0.508) instead of collapsing to whole sat/vB. Rounded to 3 dp with
-    // trailing zeros trimmed for display.
+    // (e.g. 0.51) instead of collapsing to whole sat/vB. Rounded to the
+    // hundredths (2 dp), trailing zeros trimmed, to save space.
     if (fees) {
-      const fee = (pfx, v) => '<span class="pfx">' + pfx + ': </span>' + (Math.round(Number(v) * 1000) / 1000);
+      priorityFees = fees;   // feed the H/M/L dots drawn on the fee curve
+      const fee = (pfx, v) => '<span class="pfx">' + pfx + ': </span>' + (Math.round(Number(v) * 100) / 100);
       $id("fee-high").innerHTML = fee("H",  fees.fastestFee);   // ~10 min
       $id("fee-med").innerHTML  = fee("M",  fees.halfHourFee);  // ~30 min
       $id("fee-low").innerHTML  = fee("L",  fees.hourFee);      // ~1 hr
