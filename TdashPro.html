@@ -1026,8 +1026,9 @@
   // ---- Refresh: each endpoint fails independently ----
   // returns true if any live data was obtained, false if fully offline
   async function refresh() {
-    const [height, prices, mempoolBlocks, blocks] = await Promise.all([
+    const [height, fees, prices, mempoolBlocks, blocks] = await Promise.all([
       getJSON("/blocks/tip/height").catch(() => null),
+      getJSON("/v1/fees/precise").catch(() => null),
       getJSON("/v1/prices").catch(() => null),
       getJSON("/v1/fees/mempool-blocks").catch(() => null),
       getJSON("/v1/blocks").catch(() => null),
@@ -1049,20 +1050,16 @@
       bcData.sats  = sats + "₿/$";
     }
 
-    // Priority fees, precise: derived from the projected mempool blocks (~10 min
-    // each) instead of the rounded recommended-fees endpoint, so each box shows
-    // the real decimal sat/vB rate for its time target. NP is the cheapest fee
-    // still projected to confirm. The mempool thins out when calm, so the block
-    // indices clamp to the last block actually projected.
-    if (mempoolBlocks && mempoolBlocks.length) {
-      const mb = mempoolBlocks;
-      const med = i => mb[Math.min(i, mb.length - 1)].medianFee;
-      const last = mb[mb.length - 1];
-      const fee = (pfx, v) => '<span class="pfx">' + pfx + ': </span>' + fmtRate(v);
-      $id("fee-high").innerHTML = fee("H",  med(0));                     // next block · ~10 min
-      $id("fee-med").innerHTML  = fee("M",  med(2));                     // ~3rd block · ~30 min
-      $id("fee-low").innerHTML  = fee("L",  med(5));                     // ~6th block · ~1 hr
-      $id("fee-none").innerHTML = fee("NP", Math.min(...last.feeRange)); // cheapest projected · whenever
+    // Priority fees from mempool.space /v1/fees/precise — same four targets as the
+    // recommended endpoint but unrounded, so the boxes keep their real decimals
+    // (e.g. 0.508) instead of collapsing to whole sat/vB. Rounded to 3 dp with
+    // trailing zeros trimmed for display.
+    if (fees) {
+      const fee = (pfx, v) => '<span class="pfx">' + pfx + ': </span>' + (Math.round(Number(v) * 1000) / 1000);
+      $id("fee-high").innerHTML = fee("H",  fees.fastestFee);   // ~10 min
+      $id("fee-med").innerHTML  = fee("M",  fees.halfHourFee);  // ~30 min
+      $id("fee-low").innerHTML  = fee("L",  fees.hourFee);      // ~1 hr
+      $id("fee-none").innerHTML = fee("NP", fees.economyFee);   // whenever
     }
 
     if (blocks && blocks.length && blocks[0] && blocks[0].timestamp != null) {
@@ -1074,8 +1071,8 @@
       updateNextBlock(mempoolBlocks[0]);
     }
 
-    const got = [height, prices, mempoolBlocks, blocks].filter(x => x != null).length;
-    if (got === 4) {
+    const got = [height, fees, prices, mempoolBlocks, blocks].filter(x => x != null).length;
+    if (got === 5) {
       lastUpdated = Date.now();
       $id("updated").title = new Date(lastUpdated).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit", second: "2-digit" });
       tickUpdated();
