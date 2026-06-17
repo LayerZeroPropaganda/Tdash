@@ -284,6 +284,27 @@
 
     .reveal { opacity: 0; transform: translateY(8px); animation: rise .5s ease forwards; }
     @keyframes rise { to { opacity: 1; transform: none; } }
+
+    /* ===== One-curve-at-a-time cycle =====
+       Only the .cc-active section is shown; tapping anywhere on it advances
+       Fee curve -> Gini -> Block-found-time -> back to start. */
+    .cycle-chart {
+      cursor: pointer;
+      user-select: none; -webkit-user-select: none;
+      -webkit-tap-highlight-color: transparent;
+      touch-action: manipulation;
+    }
+    .cycle-chart:not(.cc-active) { display: none; }
+    .cycle-chart.cc-active { animation: ccfade .3s ease; }
+    @keyframes ccfade { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: none; } }
+
+    .cycle-chart .section-label {
+      display: flex; align-items: center; justify-content: space-between; gap: 12px;
+    }
+    .cycle-hint {
+      font-size: 12px; font-weight: 500; color: var(--text-3);
+      white-space: nowrap; letter-spacing: .01em;
+    }
   </style>
 </head>
 <body>
@@ -323,7 +344,7 @@
   </div>
 
   <!-- ===== NEXT BLOCK FEE DISTRIBUTION ===== -->
-  <div class="nb-section reveal" style="animation-delay:.12s">
+  <div class="nb-section cycle-chart" data-cycle="0">
     <div class="section-label">Next Block Fee Curve</div>
     <div class="card">
       <div class="label">Fee Distribution · sat/vB</div>
@@ -337,7 +358,7 @@
     </div>
   </div>
 
-  <!-- ===== NEXT BLOCK CUMULATIVE FEES ===== -->
+  <!-- ===== NEXT BLOCK CUMULATIVE FEES (commented out per request) =====
   <div class="nb-section reveal" style="animation-delay:.13s">
     <div class="section-label">Cumulative Fees Across Block</div>
     <div class="card">
@@ -349,9 +370,10 @@
       <div class="feechart cum" id="cumchart"></div>
     </div>
   </div>
+  ===== end cumulative fees tile ===== -->
 
   <!-- ===== FEE CONCENTRATION / GINI ===== -->
-  <div class="nb-section reveal" style="animation-delay:.135s">
+  <div class="nb-section cycle-chart" data-cycle="1">
     <div class="section-label">Fee Concentration · Gini</div>
     <div class="card">
       <div class="label">Lorenz Curve · fee share vs weight share</div>
@@ -367,7 +389,7 @@
   </div>
 
   <!-- ===== BLOCK TIME DISTRIBUTION / POISSON ===== -->
-  <div class="nb-section reveal" style="animation-delay:.138s">
+  <div class="nb-section cycle-chart" data-cycle="2">
     <div class="section-label">Block Found Time Distribution Curve</div>
     <div class="card">
       <div class="label">Poisson Distribution of Block Found Time</div>
@@ -524,6 +546,23 @@
     return v.toFixed(2);
   }
 
+  // weight fraction (0..1) at which the next-block fee curve crosses fee rate F,
+  // or null when F is outside this block's [min,max] range. Shared by the fee
+  // curve (chart 1) and the Lorenz curve (chart 3) so the H/M/L dots land at the
+  // same weight position in both. Uses the same log-linear seed the fee curve
+  // already used, so chart 1's dots do not move.
+  function segFracAtFee(fr, F) {
+    const N = fr.length;
+    if (!(F >= fr[0] && F <= fr[N - 1])) return null;
+    let si = 0;
+    while (si < N - 2 && !(F >= fr[si] && F <= fr[si + 1])) si++;
+    const a = fr[si], b = fr[si + 1];
+    let t = (a > 0 && b > a) ? (Math.log(F) - Math.log(a)) / (Math.log(b) - Math.log(a))
+                             : (b > a ? (F - a) / (b - a) : 0);
+    t = Math.max(0, Math.min(1, t));
+    return { si, t, x: (si + t) / (N - 1) };
+  }
+
   function renderFeeChart() {
     const host = $id("feechart");
     if (!nextBlock || !nextBlock.feeRange || !nextBlock.feeRange.length) return;
@@ -602,7 +641,6 @@
     if (priorityFees) {
       const mxs = pts.map(p => p[0]), mys = pts.map(p => p[1]);   // screen space; y already log-mapped
       const mt = monotoneTangents(mxs, mys);
-      const lo = fr[0], hi = fr[fr.length - 1];
 
       // rough bounding box of an SVG <text>, from its anchor + font size
       const tbox = (x, y, str, fs, anchor) => {
@@ -628,14 +666,9 @@
       ];
       const placed = [];   // priority letters already positioned, also avoided
       for (const [label, F, cls] of defs) {
-        if (!(F >= lo && F <= hi)) continue;                     // in-range gate
-        let si = 0;
-        while (si < fr.length - 2 && !(F >= fr[si] && F <= fr[si + 1])) si++;
-        const a = fr[si], b = fr[si + 1];
-        // log-linear seed: where the straight chord between fr[si],fr[si+1] hits F
-        let t = (a > 0 && b > a) ? (Math.log(F) - Math.log(a)) / (Math.log(b) - Math.log(a))
-                                 : (b > a ? (F - a) / (b - a) : 0);
-        t = Math.max(0, Math.min(1, t));
+        const seg = segFracAtFee(fr, F);
+        if (!seg) continue;                                      // in-range gate
+        const { si, t } = seg;
         const mpx = mxs[si] + t * (mxs[si + 1] - mxs[si]);
         const mpy = monotoneHermiteY(mxs, mys, mt, si, t);        // snap onto the line
 
@@ -914,6 +947,56 @@
     svg += `<text class="gini-cap" x="${X(0.035)}" y="${Y(0.82) + 15}">0 = even &#183; 1 = skewed</text>`;
     svg += `<text class="equality-cap" x="${X(0.5)}" y="${Y(0.5) - 22}" text-anchor="middle">line of equality</text>`;
 
+    // ---- H / M / L priority-fee dots tracking the Lorenz curve ----
+    // Each priority fee F is placed at the weight share where the block's fee
+    // rate equals F (the same x as on the next-block fee curve), then lifted
+    // onto the Lorenz curve via L(x) so the dot sits exactly on the curve. The
+    // letter is nudged clear of the axis ticks, data dots and captions, and the
+    // other priority letters, preferring the open inequality gap above the curve.
+    if (priorityFees) {
+      const tbox = (tx, ty, str, fs, anchor) => {
+        const w = String(str).length * fs * 0.62;
+        const x0 = anchor === "end" ? tx - w : anchor === "middle" ? tx - w / 2 : tx;
+        return { x0: x0 - 1, x1: x0 + w + 1, y0: ty - fs * 0.8 - 1, y1: ty + fs * 0.25 + 1 };
+      };
+      const overlaps = (p, q) => !(p.x1 < q.x0 || p.x0 > q.x1 || p.y1 < q.y0 || p.y0 > q.y1);
+
+      const obstacles = [];
+      for (let p = 0; p <= 100; p += 20) {
+        obstacles.push(tbox(pad.left - 8, Y(p / 100) + 3.5, String(p), 11, "end"));   // y-axis ticks
+        obstacles.push(tbox(X(p / 100), baseline + 16, String(p), 11, "middle"));     // x-axis ticks
+      }
+      P.forEach(([px, py]) => obstacles.push({ x0: px - 4, x1: px + 4, y0: py - 4, y1: py + 4 }));
+      obstacles.push(tbox(X(0.035), Y(0.82), "Gini " + gini.toFixed(2), 19, "start"));
+      obstacles.push(tbox(X(0.035), Y(0.82) + 15, "0 = even - 1 = skewed", 10.5, "start"));
+      obstacles.push(tbox(X(0.5), Y(0.5) - 22, "line of equality", 10.5, "middle"));
+
+      const defs = [
+        ["H", priorityFees.fastestFee,  "hi"],
+        ["M", priorityFees.halfHourFee, "med"],
+        ["L", priorityFees.hourFee,     "low"],
+      ];
+      const placed = [];
+      for (const [label, F, cls] of defs) {
+        const seg = segFracAtFee(m.fr, F);
+        if (!seg) continue;                                      // fee not in this block's range
+        const mpx = X(seg.x), mpy = Y(lorenzEval(m, seg.x));     // exact point on the Lorenz curve
+        // prefer the open inequality gap above the curve, then below; step further out
+        const cands = [mpy - 13, mpy + 16, mpy - 25, mpy + 28, mpy - 37, mpy + 40];
+        let ly = null, fallback = null;
+        for (const cy of cands) {
+          if (cy - 9.6 < pad.top || cy + 3 > baseline) continue; // keep the letter inside the plot
+          if (fallback === null) fallback = cy;
+          const box = tbox(mpx, cy, label, 12, "middle");
+          if (![...obstacles, ...placed].some(o => overlaps(box, o))) { ly = cy; break; }
+        }
+        if (ly === null) ly = fallback !== null ? fallback : mpy - 13;
+        placed.push(tbox(mpx, ly, label, 12, "middle"));
+        svg += `<circle class="prio-dot ${cls}" cx="${mpx}" cy="${mpy}" r="3"/>`;
+        svg += `<text class="prio-label" x="${mpx}" y="${ly}" text-anchor="middle">${label}</text>`;
+      }
+    }
+
     svg += `</svg>`;
     host.innerHTML = svg;
   }
@@ -1061,8 +1144,8 @@
     $id("nb-fees").textContent   = (mb.totalFees / 1e8).toFixed(3) + " BTC";
     $id("nb-txs").textContent    = nf.format(mb.nTx);
     renderFeeChart();
-    updateCumStats(mb);
-    renderCumChart();
+    // updateCumStats(mb);   // cumulative-fees tile commented out
+    // renderCumChart();     // cumulative-fees tile commented out
     updateGiniStats(mb);
     renderGiniChart();
   }
@@ -1070,7 +1153,7 @@
   let chartResizeTimer = null;
   window.addEventListener("resize", () => {
     clearTimeout(chartResizeTimer);
-    chartResizeTimer = setTimeout(() => { renderFeeChart(); renderCumChart(); renderGiniChart(); renderPoissonChart(); }, 150);
+    chartResizeTimer = setTimeout(() => { renderFeeChart(); /* renderCumChart(); */ renderGiniChart(); renderPoissonChart(); }, 150);
   });
 
   // ---- Next-block clock: stopwatch + Poisson find-percentile, ticked locally ----
@@ -1219,9 +1302,39 @@
     }
   });
 
+  // ---- One-curve-at-a-time cycle ----
+  // Show a single chart; click/tap advances to the next and loops:
+  //   Next Block Fee Curve -> Fee Concentration · Gini -> Block Found Time -> back.
+  // The shown chart is re-rendered so it picks up its real container width
+  // (a display:none host reports width 0, which the renderers fall back to 600).
+  const cycleSections  = [...document.querySelectorAll(".cycle-chart")];
+  const cycleRenderers = [renderFeeChart, renderGiniChart, renderPoissonChart];
+  let cycleIndex = 0;
+
+  cycleSections.forEach((sec, idx) => {
+    const label = sec.querySelector(".section-label");
+    if (label && !label.querySelector(".cycle-hint")) {
+      const hint = document.createElement("span");
+      hint.className = "cycle-hint";
+      hint.textContent = `${idx + 1} / ${cycleSections.length} · tap to cycle ↻`;
+      label.appendChild(hint);
+    }
+    sec.addEventListener("click", () => showCycle(cycleIndex + 1));
+  });
+
+  function showCycle(i) {
+    const n = cycleSections.length;
+    if (!n) return;
+    cycleIndex = ((i % n) + n) % n;
+    cycleSections.forEach((sec, idx) => sec.classList.toggle("cc-active", idx === cycleIndex));
+    const render = cycleRenderers[cycleIndex];
+    if (typeof render === "function") render();   // re-render at the now-visible width
+  }
+
   // ---- Boot ----
   setInterval(() => { tickUpdated(); tickBlockClock(); }, 1000);
   renderPoissonChart();
+  showCycle(0);   // start on the Next Block Fee Curve
 
   refreshAndReschedule().then(() => {
     rotate();
