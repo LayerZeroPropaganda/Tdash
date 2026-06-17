@@ -328,9 +328,9 @@
     <div class="card">
       <div class="label">Fee Distribution · sat/vB</div>
       <div class="nb-stats" id="nb-stats">
-        <span>Median fee <b id="nb-median">—</b></span>
-        <span>Fee span <b id="nb-span">—</b></span>
-        <span>Total fees <b id="nb-fees">—</b></span>
+        <span>Median Fee <b id="nb-median">—</b></span>
+        <span>Fee Span <b id="nb-span">—</b></span>
+        <span>Total Fees <b id="nb-fees">—</b></span>
         <span>Transactions <b id="nb-txs">—</b></span>
       </div>
       <div class="feechart" id="feechart"></div>
@@ -344,7 +344,7 @@
       <div class="label">Cumulative Fees · BTC</div>
       <div class="nb-stats" id="cum-stats">
         <span>Total fees <b id="cum-total">—</b></span>
-        <span>From top 20% weight <b id="cum-top">—</b></span>
+        <span>Top 20% of Weight Pays <b id="cum-top">—</b></span>
       </div>
       <div class="feechart cum" id="cumchart"></div>
     </div>
@@ -357,7 +357,7 @@
       <div class="label">Lorenz Curve · fee share vs weight share</div>
       <div class="nb-stats" id="gini-stats">
         <span>Gini coefficient <b id="gini-val">—</b></span>
-        <span>Top 20% of weight pays <b id="gini-top20">—</b></span>
+        <span>Top 20% of Weight Pays <b id="gini-top20">—</b></span>
         <span>Top 10%: <b id="gini-top10">—</b></span>
         <span>Top 5%: <b id="gini-top5">—</b></span>
         <span>Top 1%: <b id="gini-top1">—</b></span>
@@ -372,10 +372,10 @@
     <div class="card">
       <div class="label">Poisson Distribution of Block Found Time</div>
       <div class="nb-stats" id="poisson-stats">
-        <span>Block found percentile <b id="pz-pct">—</b></span>
-        <span>Your odds in the next minute <b id="pz-odds">9.5%</b></span>
-        <span>% blocks found in next minute <b id="pz-area">—</b></span>
-        <span>Mean wait <b id="pz-mean">~10 min</b></span>
+        <span>Block Found Percentile <b id="pz-pct">—</b></span>
+        <span>Odds Block Found in Next Minute <b id="pz-odds">9.5%</b></span>
+        <span>Overall Distribution of Blocks Found in Next Minute <b id="pz-area">—</b></span>
+        <span>Mean Block Found <b id="pz-mean">~10 min</b></span>
       </div>
       <div class="feechart poisson" id="poissonchart"></div>
     </div>
@@ -444,7 +444,7 @@
   <footer>
     <div class="rule"></div>
     <p>Bitcoin Dashboard &nbsp;·&nbsp; For p2p Use Only</p>
-    <p class="ticker">₿ Only ₿ Only ₿ Only ₿ Only ₿ Only ₿ Only ₿ Only ₿ Only ₿ Only ₿ Only</p>
+    <p class="ticker">₿ Only ₿ Only ₿ Only ₿ Only ₿ Only ₿ Only ₿ Only ₿ Only ₿ Only ₿ Only ₿</p>
   </footer>
 
 </div>
@@ -1007,7 +1007,7 @@
       svg += `<text class="axis-label" x="${x(xMax)}" y="${baseline + 16}" text-anchor="middle">${xMax}</text>`;
     }
     svg += `<text class="axis-name" x="${pad.left + iw / 2}" y="${H - 4}" text-anchor="middle">minutes since last block</text>`;
-    svg += `<text class="axis-name" transform="rotate(-90)" x="${-(pad.top + ih / 2)}" y="13" text-anchor="middle">% found / sec</text>`;
+    svg += `<text class="axis-name" transform="rotate(-90)" x="${-(pad.top + ih / 2)}" y="13" text-anchor="middle">% blocks found / sec</text>`;
 
     const line = monotonePath(pts);
     svg += `<path d="${line} L${pts[N][0]},${baseline} L${pts[0][0]},${baseline} Z" fill="url(#poissonfill)"/>`;
