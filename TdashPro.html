@@ -285,9 +285,37 @@
     .reveal { opacity: 0; transform: translateY(8px); animation: rise .5s ease forwards; }
     @keyframes rise { to { opacity: 1; transform: none; } }
 
+    /* ===== Combined view: Next Block Fee + Block Found Time (cycle view 1) =====
+       Pared-down card: two columns split by a hairline divider, each with just two
+       stats on top (Median Fee / Fee Span | Odds / Distribution next minute) and
+       its chart. The fee curve keeps its y-axis on the left and the block-time
+       chart puts its y-axis on the right, so the two mirror across the divider.
+       Charts are pushed to the bottom of each column so they line up even when
+       one stats row wraps. Stacks on narrow screens. */
+    .combo-grid {
+      display: grid; grid-template-columns: 1fr 1fr; gap: 0;
+    }
+    .combo-col { display: flex; flex-direction: column; min-width: 0; }
+    .combo-col:first-child { padding-right: 18px; }
+    .combo-col + .combo-col { padding-left: 18px; border-left: 1px solid var(--divider); }
+    .combo-col .nb-stats { margin-top: 0; column-gap: 20px; }
+    .combo-col .feechart { margin-top: auto; padding-top: 6px; }
+    .section-sub {
+      margin-left: 10px;
+      font-size: 12px; font-weight: 500; color: var(--text-3);
+    }
+    @media (max-width: 900px) {
+      .combo-grid { grid-template-columns: 1fr; }
+      .combo-col:first-child { padding-right: 0; padding-bottom: 18px; }
+      .combo-col + .combo-col {
+        padding-left: 0; padding-top: 18px;
+        border-left: 0; border-top: 1px solid var(--divider);
+      }
+    }
+
     /* ===== One-curve-at-a-time cycle =====
        Only the .cc-active section is shown; tapping anywhere on it advances
-       Fee curve -> Gini -> Block-found-time -> back to start. */
+       Fee + Block Time -> Fee curve -> Gini -> Block-found-time -> back to start. */
     .cycle-chart {
       cursor: pointer;
       user-select: none; -webkit-user-select: none;
@@ -343,16 +371,41 @@
     </section>
   </div>
 
-  <!-- ===== NEXT BLOCK FEE DISTRIBUTION ===== -->
+  <!-- ===== NEXT BLOCK FEE + BLOCK FOUND TIME (combined, first in the cycle) ===== -->
   <div class="nb-section cycle-chart" data-cycle="0">
+    <div class="section-label">
+      <span>Next Block Fee &amp; Block Found Time<span class="section-sub">sat/vB · Poisson</span></span>
+    </div>
+    <div class="card">
+      <div class="combo-grid">
+        <div class="combo-col">
+          <div class="nb-stats">
+            <span>Median Fee <b data-stat="nb-median">—</b></span>
+            <span>Fee Span <b data-stat="nb-span">—</b></span>
+          </div>
+          <div class="feechart" id="combo-feechart"></div>
+        </div>
+        <div class="combo-col">
+          <div class="nb-stats">
+            <span>Odds Block Found Next Minute <b data-stat="pz-odds">9.5%</b></span>
+            <span>Distribution of Blocks Found Next Minute <b data-stat="pz-area">—</b></span>
+          </div>
+          <div class="feechart poisson" id="combo-poissonchart" data-yaxis="right"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ===== NEXT BLOCK FEE DISTRIBUTION ===== -->
+  <div class="nb-section cycle-chart" data-cycle="1">
     <div class="section-label">Next Block Fee Curve</div>
     <div class="card">
       <div class="label">Fee Distribution · sat/vB</div>
       <div class="nb-stats" id="nb-stats">
-        <span>Median Fee <b id="nb-median">—</b></span>
-        <span>Fee Span <b id="nb-span">—</b></span>
-        <span>Total Fees <b id="nb-fees">—</b></span>
-        <span>Transactions <b id="nb-txs">—</b></span>
+        <span>Median Fee <b id="nb-median" data-stat="nb-median">—</b></span>
+        <span>Fee Span <b id="nb-span" data-stat="nb-span">—</b></span>
+        <span>Total Fees <b id="nb-fees" data-stat="nb-fees">—</b></span>
+        <span>Transactions <b id="nb-txs" data-stat="nb-txs">—</b></span>
       </div>
       <div class="feechart" id="feechart"></div>
     </div>
@@ -373,7 +426,7 @@
   ===== end cumulative fees tile ===== -->
 
   <!-- ===== FEE CONCENTRATION / GINI ===== -->
-  <div class="nb-section cycle-chart" data-cycle="1">
+  <div class="nb-section cycle-chart" data-cycle="2">
     <div class="section-label">Fee Concentration · Gini</div>
     <div class="card">
       <div class="label">Lorenz Curve · fee share vs weight share</div>
@@ -389,15 +442,15 @@
   </div>
 
   <!-- ===== BLOCK TIME DISTRIBUTION / POISSON ===== -->
-  <div class="nb-section cycle-chart" data-cycle="2">
+  <div class="nb-section cycle-chart" data-cycle="3">
     <div class="section-label">Block Found Time Distribution Curve</div>
     <div class="card">
       <div class="label">Poisson Distribution of Block Found Time</div>
       <div class="nb-stats" id="poisson-stats">
-        <span>Block Found Percentile <b id="pz-pct">—</b></span>
-        <span>Odds Block Found in Next Minute <b id="pz-odds">9.5%</b></span>
-        <span>Overall Distribution of Blocks Found in Next Minute <b id="pz-area">—</b></span>
-        <span>Mean Block Found <b id="pz-mean">~10 min</b></span>
+        <span>Block Found Percentile <b id="pz-pct" data-stat="pz-pct">—</b></span>
+        <span>Odds Block Found in Next Minute <b id="pz-odds" data-stat="pz-odds">9.5%</b></span>
+        <span>Overall Distribution of Blocks Found in Next Minute <b id="pz-area" data-stat="pz-area">—</b></span>
+        <span>Mean Block Found <b id="pz-mean" data-stat="pz-mean">~10 min</b></span>
       </div>
       <div class="feechart poisson" id="poissonchart"></div>
     </div>
@@ -476,6 +529,12 @@
   const $id = id => document.getElementById(id);
   const nf = new Intl.NumberFormat("en-US");
 
+  // Some stats appear in two places (their own tile AND the combined Fee + Block
+  // Time view). Each copy carries data-stat="<key>", so one call fills them all.
+  function setStat(key, text) {
+    document.querySelectorAll(`[data-stat="${key}"]`).forEach(el => { el.textContent = text; });
+  }
+
   // ---- Theme (dark default, persisted) ----
   function setTheme(mode) {
     document.documentElement.dataset.theme = mode;
@@ -540,6 +599,21 @@
   let nextBlock = null;
   let priorityFees = null;   // latest /v1/fees/precise, drives the H/M/L curve dots
 
+  // Priority-fee boxes:
+  //   under 10  -> up to 2 dp, trailing zeros trimmed, but a whole number keeps
+  //                its tenths place            (3 -> "3.0", 2.5 -> "2.5", 1.02 -> "1.02")
+  //   10 and up -> rounded to tenths; a whole number shows bare
+  //                                           (12 -> "12", 12.34 -> "12.3", 123.45 -> "123.5")
+  function fmtPrioFee(v) {
+    v = Number(v);
+    if (Math.round(v * 100) / 100 >= 10) {
+      const r = Math.round(v * 10) / 10;
+      return Number.isInteger(r) ? String(r) : r.toFixed(1);
+    }
+    const r = Math.round(v * 100) / 100;
+    return Number.isInteger(r) ? r.toFixed(1) : String(r);
+  }
+
   function fmtRate(v) {
     if (v >= 100) return String(Math.round(v));
     if (v >= 10)  return v.toFixed(1);
@@ -563,9 +637,14 @@
     return { si, t, x: (si + t) / (N - 1) };
   }
 
-  function renderFeeChart() {
-    const host = $id("feechart");
+  // hostId lets the same chart draw into the standalone tile ("feechart") or the
+  // combined Fee + Block Time view ("combo-feechart"). The gradient id is keyed to
+  // the host so two copies on the page never share (and fight over) one <defs> id.
+  function renderFeeChart(hostId = "feechart") {
+    const host = $id(hostId);
+    if (!host) return;
     if (!nextBlock || !nextBlock.feeRange || !nextBlock.feeRange.length) return;
+    const gradId = "feefill-" + hostId;
 
     const fr  = nextBlock.feeRange;
     const W   = Math.max(320, host.clientWidth || 600);
@@ -604,7 +683,7 @@
     }
 
     let svg = `<svg viewBox="0 0 ${W} ${H}" width="${W}" height="${H}" role="img" aria-label="Next block fee distribution">`;
-    svg += `<defs><linearGradient id="feefill" x1="0" y1="0" x2="0" y2="1">
+    svg += `<defs><linearGradient id="${gradId}" x1="0" y1="0" x2="0" y2="1">
       <stop class="stop-a" offset="0%"/>
       <stop class="stop-b" offset="100%"/>
     </linearGradient></defs>`;
@@ -622,7 +701,7 @@
     svg += `<text class="axis-name" x="${pad.left + iw / 2}" y="${H - 4}" text-anchor="middle">% weight</text>`;
 
     const line = monotonePath(pts);
-    svg += `<path d="${line} L${pts[pts.length - 1][0]},${baseline} L${pts[0][0]},${baseline} Z" fill="url(#feefill)"/>`;
+    svg += `<path d="${line} L${pts[pts.length - 1][0]},${baseline} L${pts[0][0]},${baseline} Z" fill="url(#${gradId})"/>`;
     svg += `<path class="fee-line" d="${line}"/>`;
 
     pts.forEach(([px, py], i) => {
@@ -1034,9 +1113,14 @@
     return v.toFixed(d) + "%";
   }
 
-  function renderPoissonChart() {
-    const host = $id("poissonchart");
+  // hostId: "poissonchart" (standalone tile) or "combo-poissonchart" (combined view).
+  // A host marked data-yaxis="right" gets its y-axis labels and title on the right
+  // edge instead of the left (used by the combined view, so the two charts mirror).
+  function renderPoissonChart(hostId = "poissonchart") {
+    const host = $id(hostId);
     if (!host) return;
+    const gradId = "poissonfill-" + hostId;
+    const axisRight = host.dataset.yaxis === "right";
 
     const mean = BLOCK_MEAN_MIN;
     let elapsedMin = null;
@@ -1046,19 +1130,18 @@
 
     const W   = Math.max(320, host.clientWidth || 600);
     const H   = 250;
-    const pad = { top: 28, right: 26, bottom: 36, left: 52 };
+    const pad = axisRight ? { top: 28, right: 56, bottom: 36, left: 14 }
+                          : { top: 28, right: 26, bottom: 36, left: 52 };
     const iw  = W - pad.left - pad.right;
     const ih  = H - pad.top - pad.bottom;
 
-    // 0..30 min by default; for longer waits the axis steps up
-    // 30 -> 60 -> 90 -> 180 -> then whole hours so the marker stays on-chart.
-    let xMax = 30;
+    // 0..20 min by default; for longer waits the axis steps up
+    // 20 -> 30 -> 45 -> 60 -> 90 -> 120 -> 150 -> 180 -> then +30 min at a time
+    // (210, 240, 270, ...) so the "now" marker always stays on-chart.
+    const X_STEPS = [20, 30, 45, 60, 90, 120, 150, 180];
+    let xMax = X_STEPS[0];
     if (elapsedMin != null) {
-      xMax = elapsedMin <= 30  ? 30
-           : elapsedMin <= 60  ? 60
-           : elapsedMin <= 90  ? 90
-           : elapsedMin <= 180 ? 180
-           : Math.ceil(elapsedMin / 60) * 60;
+      xMax = X_STEPS.find(s => elapsedMin <= s) || Math.ceil(elapsedMin / 30) * 30;
     }
 
     const yMax = val(0) * 1.12;                            // peak density is at t = 0
@@ -1070,7 +1153,7 @@
     for (let i = 0; i <= N; i++) { const t = (i / N) * xMax; pts.push([x(t), y(val(t))]); }
 
     let svg = `<svg viewBox="0 0 ${W} ${H}" width="${W}" height="${H}" role="img" aria-label="Poisson distribution of block found time">`;
-    svg += `<defs><linearGradient id="poissonfill" x1="0" y1="0" x2="0" y2="1">
+    svg += `<defs><linearGradient id="${gradId}" x1="0" y1="0" x2="0" y2="1">
       <stop class="stop-a" offset="0%"/>
       <stop class="stop-b" offset="100%"/>
     </linearGradient></defs>`;
@@ -1079,21 +1162,33 @@
     for (let v = 0; v <= val(0) + 1e-6; v += 0.05) {
       const gy = y(v);
       svg += `<line class="grid" x1="${pad.left}" x2="${W - pad.right}" y1="${gy}" y2="${gy}"/>`;
-      svg += `<text class="axis-label" x="${pad.left - 8}" y="${gy + 3.5}" text-anchor="end">${v === 0 ? "0" : v.toFixed(2)}</text>`;
+      svg += axisRight
+        ? `<text class="axis-label" x="${W - pad.right + 8}" y="${gy + 3.5}" text-anchor="start">${v === 0 ? "0" : v.toFixed(2)}</text>`
+        : `<text class="axis-label" x="${pad.left - 8}" y="${gy + 3.5}" text-anchor="end">${v === 0 ? "0" : v.toFixed(2)}</text>`;
     }
-    // x labels — widen the tick step as the axis grows so the marks stay readable
-    const xStep = [10, 15, 30, 60, 120].find(c => xMax / c <= 8) || 120;
-    for (let t = 0; t <= xMax + 1e-6; t += xStep) {
+    // x labels — widen the tick step as the axis grows so the marks stay readable.
+    // Prefer a step that divides the axis evenly (at most 8 gaps), e.g.
+    // 20 -> every 5, 45 -> every 15, 90 -> every 15, 210 -> every 30; otherwise
+    // take the smallest step that fits and label the right-hand edge separately.
+    const X_TICK_STEPS = [5, 10, 15, 30, 60, 120];
+    const xStep = X_TICK_STEPS.find(c => xMax % c === 0 && xMax / c <= 8)
+               || X_TICK_STEPS.find(c => xMax / c <= 8) || 120;
+    const xTicks = [];
+    for (let t = 0; t <= xMax + 1e-6; t += xStep) xTicks.push(t);
+    if (xMax % xStep !== 0) {   // always label the right-hand edge…
+      if (x(xMax) - x(xTicks[xTicks.length - 1]) < 28) xTicks.pop();   // …dropping a tick that would collide with it
+      xTicks.push(xMax);
+    }
+    for (const t of xTicks) {
       svg += `<text class="axis-label" x="${x(t)}" y="${baseline + 16}" text-anchor="middle">${t}</text>`;
     }
-    if (xMax % xStep !== 0) {   // always label the right-hand edge
-      svg += `<text class="axis-label" x="${x(xMax)}" y="${baseline + 16}" text-anchor="middle">${xMax}</text>`;
-    }
     svg += `<text class="axis-name" x="${pad.left + iw / 2}" y="${H - 4}" text-anchor="middle">minutes since last block</text>`;
-    svg += `<text class="axis-name" transform="rotate(-90)" x="${-(pad.top + ih / 2)}" y="13" text-anchor="middle">% blocks found / sec</text>`;
+    svg += axisRight
+      ? `<text class="axis-name" transform="rotate(90)" x="${pad.top + ih / 2}" y="${-(W - 13)}" text-anchor="middle">% blocks found / sec</text>`
+      : `<text class="axis-name" transform="rotate(-90)" x="${-(pad.top + ih / 2)}" y="13" text-anchor="middle">% blocks found / sec</text>`;
 
     const line = monotonePath(pts);
-    svg += `<path d="${line} L${pts[N][0]},${baseline} L${pts[0][0]},${baseline} Z" fill="url(#poissonfill)"/>`;
+    svg += `<path d="${line} L${pts[N][0]},${baseline} L${pts[0][0]},${baseline} Z" fill="url(#${gradId})"/>`;
 
     // shaded "already elapsed" mass (0..now) — equals the exponential CDF
     if (elapsedMin != null && elapsedMin > 0) {
@@ -1139,11 +1234,12 @@
 
   function updateNextBlock(mb) {
     nextBlock = mb;
-    $id("nb-median").textContent = "~" + fmtRate(mb.medianFee) + " sat/vB";
-    $id("nb-span").textContent   = fmtRate(Math.min(...mb.feeRange)) + " – " + fmtRate(Math.max(...mb.feeRange)) + " sat/vB";
-    $id("nb-fees").textContent   = (mb.totalFees / 1e8).toFixed(3) + " BTC";
-    $id("nb-txs").textContent    = nf.format(mb.nTx);
-    renderFeeChart();
+    setStat("nb-median", "~" + fmtRate(mb.medianFee) + " sat/vB");
+    setStat("nb-span",   fmtRate(Math.min(...mb.feeRange)) + " – " + fmtRate(Math.max(...mb.feeRange)) + " sat/vB");
+    setStat("nb-fees",   (mb.totalFees / 1e8).toFixed(3) + " BTC");
+    setStat("nb-txs",    nf.format(mb.nTx));
+    renderFeeChart("combo-feechart");   // combined view (cycle 1)
+    renderFeeChart();                   // standalone fee curve tile (cycle 2)
     // updateCumStats(mb);   // cumulative-fees tile commented out
     // renderCumChart();     // cumulative-fees tile commented out
     updateGiniStats(mb);
@@ -1153,7 +1249,7 @@
   let chartResizeTimer = null;
   window.addEventListener("resize", () => {
     clearTimeout(chartResizeTimer);
-    chartResizeTimer = setTimeout(() => { renderFeeChart(); /* renderCumChart(); */ renderGiniChart(); renderPoissonChart(); }, 150);
+    chartResizeTimer = setTimeout(() => { renderCombo(); renderFeeChart(); /* renderCumChart(); */ renderGiniChart(); renderPoissonChart(); }, 150);
   });
 
   // ---- Next-block clock: stopwatch + Poisson find-percentile, ticked locally ----
@@ -1179,9 +1275,16 @@
     const pctile  = (1 - Math.exp(-elapsed / 600)) * 100;
     const pctDisp = pctile > 99.9 ? "99.9+%" : pctile.toFixed(1) + "%";
     $id("block-pct").textContent = pctDisp;
-    if ($id("pz-pct")) $id("pz-pct").textContent = pctDisp;
-    if ($id("pz-area")) $id("pz-area").textContent = fmtSmallPct((Math.exp(-elapsed / 600) - Math.exp(-(elapsed + 60) / 600)) * 100);
-    renderPoissonChart();
+    setStat("pz-pct", pctDisp);
+    setStat("pz-area", fmtSmallPct((Math.exp(-elapsed / 600) - Math.exp(-(elapsed + 60) / 600)) * 100));
+    renderPoissonChart("combo-poissonchart");   // combined view (cycle 1)
+    renderPoissonChart();                       // standalone block-time tile (cycle 4)
+  }
+
+  // Combined Next Block Fee + Block Found Time view: both charts side by side.
+  function renderCombo() {
+    renderFeeChart("combo-feechart");
+    renderPoissonChart("combo-poissonchart");
   }
 
   // ---- Relative "updated" timestamp ----
@@ -1232,10 +1335,12 @@
     // Priority fees from mempool.space /v1/fees/precise — same four targets as the
     // recommended endpoint but unrounded, so the boxes keep their real decimals
     // (e.g. 0.51) instead of collapsing to whole sat/vB. Rounded to the
-    // hundredths (2 dp), trailing zeros trimmed, to save space.
+    // hundredths (2 dp), trailing zeros trimmed, to save space — except that a
+    // whole number under 100 keeps its tenths place (3 -> "3.0") so the boxes read
+    // consistently; at 100+ whole numbers stay bare ("120").
     if (fees) {
       priorityFees = fees;   // feed the H/M/L dots drawn on the fee curve
-      const fee = (pfx, v) => '<span class="pfx">' + pfx + ': </span>' + (Math.round(Number(v) * 100) / 100);
+      const fee = (pfx, v) => '<span class="pfx">' + pfx + ': </span>' + fmtPrioFee(v);
       $id("fee-high").innerHTML = fee("H",  fees.fastestFee);   // ~10 min
       $id("fee-med").innerHTML  = fee("M",  fees.halfHourFee);  // ~30 min
       $id("fee-low").innerHTML  = fee("L",  fees.hourFee);      // ~1 hr
@@ -1304,11 +1409,18 @@
 
   // ---- One-curve-at-a-time cycle ----
   // Show a single chart; click/tap advances to the next and loops:
-  //   Next Block Fee Curve -> Fee Concentration · Gini -> Block Found Time -> back.
+  //   Next Block Fee + Block Found Time -> Next Block Fee Curve
+  //   -> Fee Concentration · Gini -> Block Found Time -> back.
   // The shown chart is re-rendered so it picks up its real container width
   // (a display:none host reports width 0, which the renderers fall back to 600).
+  // Order here must match the order of the .cycle-chart sections in the HTML.
   const cycleSections  = [...document.querySelectorAll(".cycle-chart")];
-  const cycleRenderers = [renderFeeChart, renderGiniChart, renderPoissonChart];
+  const cycleRenderers = [
+    renderCombo,                    // 1  Next Block Fee & Block Found Time
+    () => renderFeeChart(),         // 2  Next Block Fee Curve
+    () => renderGiniChart(),        // 3  Fee Concentration · Gini
+    () => renderPoissonChart(),     // 4  Block Found Time Distribution
+  ];
   let cycleIndex = 0;
 
   cycleSections.forEach((sec, idx) => {
@@ -1334,7 +1446,7 @@
   // ---- Boot ----
   setInterval(() => { tickUpdated(); tickBlockClock(); }, 1000);
   renderPoissonChart();
-  showCycle(0);   // start on the Next Block Fee Curve
+  showCycle(0);   // start on the combined Next Block Fee + Block Found Time view
 
   refreshAndReschedule().then(() => {
     rotate();
