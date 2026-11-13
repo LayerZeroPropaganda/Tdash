@@ -342,17 +342,22 @@
        Park: nothing below applies; the page renders exactly as TdashPro.html.
        Drive: the page is laid out exactly as Park looks at its full 1240px width,
        then the whole thing is scaled down as one picture (JS sets the transform)
-       to fit the 773 x 601 drive view. The rules below undo the narrow-screen
-       media queries, which would otherwise fire on the small drive viewport and
-       reflow the layout instead of shrinking it. */
+       so it spans the full 773px width of the drive view, and scrolls vertically
+       within the 601px height. The page itself (.wrap) is the scroller, so the
+       sticky header still sticks inside the scaled page. The rules below undo
+       the narrow-screen media queries, which would otherwise fire on the small
+       drive viewport and reflow the layout instead of shrinking it. */
     html[data-mode="drive"] { --vw: 12.4px; }               /* 1% of 1240px */
     html[data-mode="drive"], html[data-mode="drive"] body { overflow: hidden; }
     [data-mode="drive"] .wrap {
       position: fixed; top: 0; left: 0;
       width: 1240px; max-width: none; margin: 0;
-      padding-bottom: 22px;                                  /* matches the header's top padding */
+      overflow-y: auto; overflow-x: hidden;                  /* JS sets its height to the view */
+      overscroll-behavior: contain;
+      scrollbar-width: none;                                 /* keep the full 1240px for layout */
       transform-origin: 0 0;
     }
+    [data-mode="drive"] .wrap::-webkit-scrollbar { display: none; }
     [data-mode="drive"] .dash { grid-template-columns: 1.2fr 1.275fr 1.3fr 0.8fr 1.225fr; }
     [data-mode="drive"] .fee-grid { grid-template-columns: repeat(4, 1fr); }
     [data-mode="drive"] .combo-grid { grid-template-columns: 1fr 1fr; }
@@ -1477,46 +1482,25 @@
 
   // ---- Drive / Park ----
   // Park = the page exactly as before. Drive = the same Park layout (at its full
-  // 1240px width) scaled down as one picture to fit the 773 x 601 drive view, so
-  // every size and gap keeps its proportion. Drive is the default; the last
+  // 1240px width) scaled down as one picture so it spans the full width of the
+  // 773 x 601 drive view, so every size and gap keeps its proportion. The page
+  // scrolls vertically inside the 601px height. Drive is the default; the last
   // choice is remembered like the Dark / Light theme.
   const DRIVE_W = 773, DRIVE_H = 601;   // drive view, CSS px
   const DESIGN_W = 1240;                // Park layout width that Drive scales down
   const wrapEl = document.querySelector(".wrap");
 
-  // Unscaled page height, sized for the TALLEST of the tap-to-cycle chart views,
-  // so the scale holds steady as you tap through them. Each hidden view is laid
-  // out for a moment to measure it (all in one go, so it is never painted).
-  function driveContentHeight() {
-    const active = cycleSections[cycleIndex];
-    const activeH = active ? active.offsetHeight : 0;
-    let tallest = activeH;
-    cycleSections.forEach((sec, i) => {
-      if (i === cycleIndex) return;
-      sec.style.display = "block";
-      cycleRenderers[i]();                  // draw its chart at its real width
-      tallest = Math.max(tallest, sec.offsetHeight);
-      sec.style.display = "";
-    });
-    return wrapEl.offsetHeight - activeH + tallest;
-  }
-
-  let driveScale = 0, driveBoxW = 0;
   function fitDrive() {
     if (document.documentElement.dataset.mode !== "drive") {
-      wrapEl.style.transform = ""; driveScale = 0; return;
+      wrapEl.style.transform = ""; wrapEl.style.height = ""; return;
     }
-    // fit the 773 x 601 view (or the window, if it is ever smaller than that)
+    // the 773 x 601 view (or the window, if it is ever smaller than that)
     const boxW = Math.min(DRIVE_W, window.innerWidth);
     const boxH = Math.min(DRIVE_H, window.innerHeight);
     if (!(boxW > 0 && boxH > 0)) return;
-    const s = Math.min(boxW / DESIGN_W, boxH / driveContentHeight());
-    // ignore a sub-pixel grow from rounding (the current, slightly smaller scale
-    // still fits), so the picture doesn't shimmer as you tap through charts
-    if (boxW === driveBoxW && s >= driveScale && s < driveScale * 1.003) return;
-    driveScale = s; driveBoxW = boxW;
-    const ox = (boxW - DESIGN_W * s) / 2;   // centered across the drive view's width
-    wrapEl.style.transform = `translate(${ox}px, 0) scale(${s})`;
+    const s = boxW / DESIGN_W;                     // fill the width
+    wrapEl.style.height = (boxH / s) + "px";       // scroll area = the view's height once scaled
+    wrapEl.style.transform = `scale(${s})`;
   }
 
   function setMode(mode) {
@@ -1526,15 +1510,11 @@
       $id(id).classList.toggle("active", mode === m);
       $id(id).setAttribute("aria-pressed", String(mode === m));
     });
-    showCycle(cycleIndex);   // redraw the visible chart at the new layout width
     fitDrive();
+    showCycle(cycleIndex);   // redraw the visible chart at the new layout width
   }
   $id("mode-drive").addEventListener("click", () => setMode("drive"));
   $id("mode-park").addEventListener("click", () => setMode("park"));
-
-  // Re-fit whenever the page's natural size changes (live data arriving, a chart
-  // view changing, the web font loading) or the window is resized.
-  if ("ResizeObserver" in window) new ResizeObserver(() => fitDrive()).observe(wrapEl);
   window.addEventListener("resize", fitDrive);
 
   // ---- Boot ----
